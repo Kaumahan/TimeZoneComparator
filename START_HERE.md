@@ -51,6 +51,17 @@ To keep using the same signing key, open the file `KEYSTORE-INFO.txt` from the s
 three repository secrets it lists (Settings → Secrets and variables → Actions → New repository secret).
 If you lose the key, Play Console lets you request an upload key reset.
 
-## Test it on your phone first (optional, no Play needed)
+## Test it on your phone first (recommended, no Play needed)
 
-Ask me for the "debug APK" build option and I'll add a workflow that makes an `.apk` you can install directly.
+1. In the **Actions** tab, click **Build test APK (install on your phone)** → **Run workflow**.
+2. When it turns green, download the **test-apk** artifact and unzip it to get `app-debug.apk`.
+3. Send the file to your phone (email, cloud drive or USB) and tap it to install.
+   Android will ask you to allow installs from this source; allow it for that one app (Files, Chrome or Drive).
+   Play Protect may show a warning because it is a test build. Choose **Install anyway**.
+4. Open the app and check:
+   - Add an alarm a few minutes ahead, allow notifications, then fully close the app. It should still alert.
+   - Tap "Send a test alert in 5 seconds" and lock the phone. It should still arrive.
+   - If a banner asks to allow "Alarms & reminders", tap it and switch it on.
+   - Add and remove clocks, and drag the hour slider.
+
+The test APK is for you only. Never upload it to Google Play. Use the `.aab` from the other workflow for that.
