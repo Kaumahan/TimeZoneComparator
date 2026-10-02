@@ -5,7 +5,8 @@ RES=android/app/src/main/res
 M=android/app/src/main/AndroidManifest.xml
 mkdir -p "$RES/drawable" "$RES/raw"
 cp android-extras/ic_stat_alarm.xml "$RES/drawable/"
-cp android-extras/res/raw/alarm_tone.wav "$RES/raw/"
+# Alarm tones: one source of truth in www/sounds (also used for the in-app preview)
+cp www/sounds/tone_*.wav "$RES/raw/"
 
 add_perm() {  # $1 = permission name, $2 = optional extra attributes
   if ! grep -q "android.permission.$1\"" "$M"; then

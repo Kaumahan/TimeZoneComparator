@@ -110,6 +110,7 @@ button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 .ringbox{width:100%;max-width:360px;background:var(--z900);border:1px solid var(--cy5);border-radius:20px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 0 40px rgba(6,182,212,.25)}
 .ringbox .ic{font-size:40px;color:var(--cy)}
 .ringbox button{width:100%}
+.soundrow{display:flex;gap:8px}.soundrow select{flex:1;min-width:0}.soundrow .mini{flex:none;min-width:104px;justify-content:center}
 </style>
 </head>
 <body>
@@ -219,7 +220,16 @@ ICONS.bell=svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M1
 ICONS.plus=svg('<path d="M12 5v14M5 12h14"/>');
 ICONS.edit=svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
 const LN=()=>{try{return window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()?window.Capacitor.Plugins.LocalNotifications:null}catch{return null}};
-const MAX_ALARMS=20,TEST_ID=2000000000,CH='alarms_v2';
+const MAX_ALARMS=20,TEST_ID=2000000000;
+const SOUNDS=[{id:'classic',name:'Classic bell'},{id:'digital',name:'Digital beeps'},{id:'melody',name:'Melody'},{id:'siren',name:'Siren'},{id:'chime',name:'Chime'},{id:'pulse',name:'Pulse'}];
+const soundOf=id=>SOUNDS.some(x=>x.id===id)?id:'classic';
+const soundName=id=>SOUNDS.find(x=>x.id===soundOf(id)).name;
+const chOf=id=>'alarm_'+soundOf(id);
+let defSound=soundOf(store.get('tzc_sound','classic'));
+let prevAudio=null,ringAudio=null;
+function stopPreview(){if(prevAudio){try{prevAudio.pause()}catch{}prevAudio=null}const b=document.getElementById('af-prev');if(b)b.textContent='▶ Preview'}
+function togglePreview(id){if(prevAudio){stopPreview();return}
+try{prevAudio=new Audio('sounds/tone_'+soundOf(id)+'.wav');prevAudio.volume=1;prevAudio.onended=stopPreview;const pr=prevAudio.play();if(pr&&pr.catch)pr.catch(stopPreview);const b=document.getElementById('af-prev');if(b)b.textContent='■ Stop'}catch{stopPreview()}}
 state.alarms=store.get('tzc_alarms',[]);if(!Array.isArray(state.alarms))state.alarms=[];
 state.notif={native:!!LN(),perm:'unknown',exact:'granted'};
 let alarmSeq=store.get('tzc_alarm_seq',0);
@@ -255,16 +265,15 @@ try{const pend=await ln.getPending();const mine=(pend.notifications||[]).filter(
 if(mine.length)await ln.cancel({notifications:mine.map(n=>({id:n.id}))});
 const now=Date.now(),list=[];
 const act=state.alarms.filter(a=>a.enabled),per=Math.max(7,Math.min(60,Math.floor(400/Math.max(1,act.length))));
-act.forEach(a=>{occurrences(a,per,now+5000).forEach((o,k)=>list.push({id:a.n*100+k,title:a.label||'Meeting reminder',body:alarmBody(a,o),schedule:{at:new Date(o.fire),allowWhileIdle:true},channelId:CH,smallIcon:'ic_stat_alarm',extra:{alarm:a.id}}))});
+act.forEach(a=>{occurrences(a,per,now+5000).forEach((o,k)=>list.push({id:a.n*100+k,title:a.label||'Meeting reminder',body:alarmBody(a,o),schedule:{at:new Date(o.fire),allowWhileIdle:true},channelId:chOf(a.sound),smallIcon:'ic_stat_alarm',extra:{alarm:a.id}}))});
 if(list.length)await ln.schedule({notifications:list})}catch(e){console.error(e)}}
 async function refreshNotifState(){const ln=LN();
 if(ln){try{const p=await ln.checkPermissions();state.notif.perm=p.display;try{const e=await ln.checkExactNotificationSetting();state.notif.exact=e.exact_alarm}catch{}}catch(e){console.error(e)}}
 else if('Notification' in window){state.notif.perm=Notification.permission==='default'?'prompt':Notification.permission}
 else state.notif.perm='unsupported'}
 async function initNotifications(){const ln=LN();
-if(ln){try{await ln.deleteChannel({id:'alarms'})}catch{}
-const base={id:CH,name:'Alarms & reminders',description:'Meeting alarms and reminders',importance:5,visibility:1,vibration:true,lights:true};
-try{await ln.createChannel({...base,sound:'alarm_tone.wav'})}catch(e){try{await ln.createChannel(base)}catch(e2){console.error(e2)}}}
+if(ln){for(const old of ['alarms','alarms_v2']){try{await ln.deleteChannel({id:old})}catch{}}
+for(const sd of SOUNDS){try{await ln.createChannel({id:'alarm_'+sd.id,name:'Alarm: '+sd.name,description:'Loud meeting alarm ('+sd.name+')',importance:5,visibility:1,vibration:true,lights:true,sound:'tone_'+sd.id+'.wav'})}catch(e){console.error(e)}}}
 await refreshNotifState();await syncNotifications();render()}
 async function enableNotifications(){const ln=LN();
 if(ln){try{const p=await ln.requestPermissions();state.notif.perm=p.display}catch(e){console.error(e)}}
@@ -276,16 +285,18 @@ async function allowExact(){const ln=LN();if(ln){try{await ln.changeExactNotific
 const fired=store.get('tzc_fired',{});
 function checkWebAlarms(){if(state.notif.native||document.getElementById('ringok'))return;const now=Date.now();
 state.alarms.forEach(a=>{if(!a.enabled)return;const o=occurrences(a,1,now-90000)[0];
-if(o&&o.fire<=now&&fired[a.id]!==o.fire){fired[a.id]=o.fire;store.set('tzc_fired',fired);ring(a.label||'Meeting reminder',alarmBody(a,o))}})}
+if(o&&o.fire<=now&&fired[a.id]!==o.fire){fired[a.id]=o.fire;store.set('tzc_fired',fired);ring(a.label||'Meeting reminder',alarmBody(a,o),a.sound)}})}
 let ringTimer=null,audioCtx=null;
 function beep(){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.2;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.25)}catch{}}
 function sheet(h){document.getElementById('sheet').innerHTML=h}
-function closeSheet(){sheet('')}
-function stopRing(){clearInterval(ringTimer);ringTimer=null;closeSheet()}
-function ring(title,body){
+function closeSheet(){stopPreview();sheet('')}
+function stopRing(){clearInterval(ringTimer);ringTimer=null;if(ringAudio){try{ringAudio.pause()}catch{}ringAudio=null}closeSheet()}
+function ring(title,body,sound){
 sheet(`<div class="ov ring"><div class="ringbox" role="alertdialog">${ICONS.bell}<h2>${esc(title)}</h2><p class="as">${esc(body)}</p><button id="ringok" class="mini pri" style="justify-content:center;padding:12px">Dismiss</button></div></div>`);
 document.getElementById('ringok').onclick=stopRing;
-beep();clearInterval(ringTimer);let n=0;ringTimer=setInterval(()=>{beep();if(++n>40)stopRing()},1200);
+clearInterval(ringTimer);let n=0;
+const fallback=()=>{beep();clearInterval(ringTimer);ringTimer=setInterval(()=>{beep();if(++n>40)stopRing()},1200)};
+try{ringAudio=new Audio('sounds/tone_'+soundOf(sound)+'.wav');ringAudio.loop=true;ringAudio.volume=1;const pr=ringAudio.play();if(pr&&pr.catch)pr.catch(fallback);ringTimer=setInterval(()=>{if(++n>60)stopRing()},1000)}catch{fallback()}
 try{if(!state.notif.native&&'Notification' in window&&Notification.permission==='granted')new Notification(title,{body})}catch{}
 try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch{}}
 
@@ -295,7 +306,7 @@ if(!state.alarms.length)return'<p class="hint">No alarms yet. Tap Add to set a m
 return state.alarms.map(a=>{const nx=occurrences(a,1,Date.now())[0];
 const nt=nx?'Next alert: '+new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(nx.fire))+' (your time)':(a.repeat==='once'?'Finished':'No upcoming alert');
 return`<div class="al ${a.enabled&&nx?'':'aoff'}"><div class="ainfo"><div class="at">${esc(a.label||'Meeting')}</div>
-<div class="as mono">${fmt12(a.time)} · ${esc(zoneLabel(a.zone))}</div><div class="as">${repeatText(a)} · ${leadText(a.lead)}</div><div class="an">${nt}</div></div>
+<div class="as mono">${fmt12(a.time)} · ${esc(zoneLabel(a.zone))}</div><div class="as">${repeatText(a)} · ${leadText(a.lead)} · ♪ ${esc(soundName(a.sound))}</div><div class="an">${nt}</div></div>
 <div class="aact"><label class="sw" aria-label="Alarm on or off"><input type="checkbox" data-atoggle="${a.id}" ${a.enabled?'checked':''}><span class="tr"></span><span class="th"></span></label>
 <button class="ib" data-aedit="${a.id}" aria-label="Edit alarm">${ICONS.edit}</button><button class="ib" data-adel="${a.id}" aria-label="Delete alarm">${ICONS.trash}</button></div></div>`}).join('')}
 function alarmsSectionHTML(){const n=state.notif;let b='';
@@ -304,7 +315,7 @@ else if(n.perm==='denied')b='<div class="note warn"><span>Notifications are bloc
 else if(n.perm==='unsupported')b='<div class="note warn"><span>This browser does not support notifications. Alarms will ring on screen only.</span></div>';
 else if(n.native&&n.exact==='denied')b='<div class="note warn"><span>For on-time alarms, allow Alarms &amp; reminders for this app.</span><button id="allowExact" class="mini">Open settings</button></div>';
 return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.bell}Alarms &amp; reminders</span><button id="addAlarm" class="mini pri">${ICONS.plus}<span>Add</span></button></div>${b}<div class="alist">${alarmListHTML()}</div>
-<button id="testAlert" class="linkbtn">Send a test alert in 5 seconds</button>${n.native?'<p class="hint">Alarms ring even when the app is closed. If they come late or not at all, set this app’s battery usage to Unrestricted and allow auto-start (Xiaomi, Oppo, Vivo, Samsung and Huawei phones are strict). Open the app every few weeks to refresh upcoming alarms.</p>':'<p class="hint">In a browser, alerts only sound while this page is open. The Android app can alert you in the background.</p>'}</section>`}
+<button id="testAlert" class="linkbtn">Send a test alert in 5 seconds</button>${n.native?'<p class="hint">Alarms ring even when the app is closed, on your phone’s <b>Alarm volume</b> (turn it up in Settings → Sound). If they come late or not at all, set this app’s battery usage to Unrestricted and allow auto-start (Xiaomi, Oppo, Vivo, Samsung and Huawei phones are strict). Open the app every few weeks to refresh upcoming alarms.</p>':'<p class="hint">In a browser, alerts only sound while this page is open. The Android app can alert you in the background.</p>'}</section>`}
 function bindAlarmList(){
 app.querySelectorAll('[data-atoggle]').forEach(i=>i.onchange=async()=>{const a=state.alarms.find(x=>x.id===i.dataset.atoggle);if(a){a.enabled=i.checked;saveAlarms();await syncNotifications();updateAlarmList()}});
 app.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>openAlarmForm(b.dataset.aedit));
@@ -318,8 +329,8 @@ const t=$('#testAlert');if(t)t.onclick=testAlert;
 bindAlarmList()}
 async function testAlert(){const ln=LN();
 if(ln){if(state.notif.perm!=='granted'){await enableNotifications();if(state.notif.perm!=='granted')return}
-try{await ln.schedule({notifications:[{id:TEST_ID,title:'Test alert',body:'Notifications are working.',schedule:{at:new Date(Date.now()+5000),allowWhileIdle:true},channelId:CH,smallIcon:'ic_stat_alarm'}]})}catch(e){console.error(e)}}
-else{if(state.notif.perm==='prompt')await enableNotifications();setTimeout(()=>ring('Test alert','Alerts are working while this page is open.'),5000)}
+try{await ln.schedule({notifications:[{id:TEST_ID,title:'Test alert',body:'Notifications are working.',schedule:{at:new Date(Date.now()+5000),allowWhileIdle:true},channelId:chOf(defSound),smallIcon:'ic_stat_alarm'}]})}catch(e){console.error(e)}}
+else{if(state.notif.perm==='prompt')await enableNotifications();setTimeout(()=>ring('Test alert','Alerts are working while this page is open.',defSound),5000)}
 const b=document.getElementById('testAlert');if(b){b.textContent='Test alert scheduled…';setTimeout(()=>{const y=document.getElementById('testAlert');if(y)y.textContent='Send a test alert in 5 seconds'},5500)}}
 function openAlarmForm(id){
 const ex=id?state.alarms.find(a=>a.id===id):null;
@@ -334,19 +345,22 @@ sheet(`<div class="ov" id="ov"><div class="sheet" role="dialog" aria-label="${ex
 <label class="fld"><span>Repeat</span><select id="af-repeat"><option value="once" ${a.repeat==='once'?'selected':''}>Once</option><option value="daily" ${a.repeat==='daily'?'selected':''}>Every day</option><option value="weekdays" ${a.repeat==='weekdays'?'selected':''}>Mon–Fri</option></select></label></div>
 <label class="fld" id="af-datewrap" style="${a.repeat==='once'?'':'display:none'}"><span>Date (in that zone)</span><input id="af-date" type="date" value="${a.date||''}"></label>
 <label class="fld"><span>Remind me</span><select id="af-lead">${[0,5,10,15,30,60].map(v=>`<option value="${v}" ${v===a.lead?'selected':''}>${leadText(v)}</option>`).join('')}</select></label>
+<div class="fld"><span>Alarm sound</span><div class="soundrow"><select id="af-sound" aria-label="Alarm sound">${SOUNDS.map(x=>`<option value="${x.id}" ${x.id===soundOf(a.sound||defSound)?'selected':''}>${x.name}</option>`).join('')}</select><button id="af-prev" type="button" class="mini">▶ Preview</button></div></div>
 <div class="err" id="af-err" role="alert"></div>
 <div class="btns"><button id="af-cancel" type="button">Cancel</button><button id="af-save" type="button" class="go">Save</button></div></div></div>`);
 const g=i=>document.getElementById(i);
 g('ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};
 g('af-cancel').onclick=closeSheet;
+g('af-prev').onclick=()=>togglePreview(g('af-sound').value);
+g('af-sound').onchange=stopPreview;
 g('af-repeat').onchange=e=>{g('af-datewrap').style.display=e.target.value==='once'?'':'none'};
 g('af-save').onclick=async()=>{
-const rec={label:g('af-label').value.trim().slice(0,40),zone:g('af-zone').value,time:g('af-time').value,repeat:g('af-repeat').value,date:g('af-date').value,lead:+g('af-lead').value};
+const rec={label:g('af-label').value.trim().slice(0,40),zone:g('af-zone').value,time:g('af-time').value,repeat:g('af-repeat').value,date:g('af-date').value,lead:+g('af-lead').value,sound:soundOf(g('af-sound').value)};
 const err=g('af-err');
 if(!/^\d{2}:\d{2}$/.test(rec.time)){err.textContent='Choose a time.';return}
 if(rec.repeat==='once'){if(!rec.date){err.textContent='Choose a date.';return}if(!occurrences(rec,1,Date.now())[0]){err.textContent='That alert time has already passed.';return}}
 if(ex)Object.assign(ex,rec,{enabled:true});else state.alarms.push({id:'a'+Date.now(),n:++alarmSeq,enabled:true,...rec});
-store.set('tzc_alarm_seq',alarmSeq);saveAlarms();closeSheet();
+store.set('tzc_alarm_seq',alarmSeq);defSound=rec.sound;store.set('tzc_sound',defSound);saveAlarms();closeSheet();
 if(state.notif.perm==='prompt')await enableNotifications();else{await syncNotifications();render()}}}
 document.addEventListener('visibilitychange',async()=>{if(!document.hidden){await refreshNotifState();await syncNotifications();render()}});
 setInterval(checkWebAlarms,1000);

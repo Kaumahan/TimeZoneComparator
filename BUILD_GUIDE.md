@@ -68,7 +68,11 @@ They are also refreshed every time you open the app, so open it at least every c
 
 * Permissions added by `scripts/android-setup.sh`: `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE`,
   `WAKE_LOCK`, `SCHEDULE_EXACT_ALARM` (Android 12 only) and `USE_EXACT_ALARM` (granted automatically on Android 13+).
-* Alerts use a custom 9-second alarm sound (`android-extras/res/raw/alarm_tone.wav`) on a high-importance channel.
+* Alerts use one of six loud 24-second alarm tones (`www/sounds/tone_*.wav`): Classic bell, Digital beeps, Melody,
+  Siren, Chime, Pulse. Pick one per alarm in the app (with a Preview button). Each tone is its own notification
+  channel, so you can also swap any of them for a phone ringtone in Android Settings → Apps → this app → Notifications.
+* Alerts are played on the phone's **Alarm volume** (not the notification volume). Turn it up in Settings → Sound.
+  If your phone plays them quietly, tell me the phone model.
 * Up to about 400 upcoming alerts are scheduled in total (for one weekday alarm that is roughly 10 weeks ahead),
   and the list is refreshed every time the app opens.
 * On Android 12+ the user may need to allow "Alarms & reminders" for the app so alerts arrive on the exact minute.
