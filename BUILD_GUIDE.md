@@ -66,15 +66,20 @@ The app can schedule meeting alarms in any time zone. In the Android app they ar
 phone's alarm system, so they fire even when the app is closed (and are re-scheduled after a reboot).
 They are also refreshed every time you open the app, so open it at least every couple of weeks.
 
-* Permissions added by `scripts/android-setup.sh`: `POST_NOTIFICATIONS`, `SCHEDULE_EXACT_ALARM`,
-  `RECEIVE_BOOT_COMPLETED`, `VIBRATE`.
+* Permissions added by `scripts/android-setup.sh`: `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE`,
+  `WAKE_LOCK`, `SCHEDULE_EXACT_ALARM` (Android 12 only) and `USE_EXACT_ALARM` (granted automatically on Android 13+).
+* Alerts use a custom 9-second alarm sound (`android-extras/res/raw/alarm_tone.wav`) on a high-importance channel.
+* Up to about 400 upcoming alerts are scheduled in total (for one weekday alarm that is roughly 10 weeks ahead),
+  and the list is refreshed every time the app opens.
 * On Android 12+ the user may need to allow "Alarms & reminders" for the app so alerts arrive on the exact minute.
   The app shows a banner with a shortcut to that setting if it is not allowed.
 * Alerts are high-priority notifications with sound and vibration. They do not take over the screen like the
   built-in Clock app, and they follow the phone's silent / Do Not Disturb settings.
 * In the website / PWABuilder version, alerts only ring while the page is open.
 
-**Play Console:** exact-alarm permissions are restricted. In App content you may be asked to declare why the
+**Play Console:** exact-alarm permissions are restricted. `USE_EXACT_ALARM` is meant for alarm-clock and calendar
+apps; if Google objects, delete the `add_perm USE_EXACT_ALARM` line in `scripts/android-setup.sh` and rebuild
+(users will then be asked to allow "Alarms & reminders" once). In App content you may be asked to declare why the
 app uses them. Answer honestly: it schedules user-created meeting reminders / alarms.
 
 ## Google Play Console checklist
