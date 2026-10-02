@@ -1,0 +1,20 @@
+{
+  "name": "time-zone-comparator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Compare time zones and find overlapping work hours.",
+  "scripts": {
+    "assets": "npx capacitor-assets generate --android",
+    "sync": "npx cap sync android",
+    "setup-android": "bash scripts/android-setup.sh"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/local-notifications": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "latest",
+    "@capacitor/cli": "latest"
+  }
+}

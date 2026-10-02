@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#09090b">
+<title>Time Zone Comparator</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0}
+:root{--bg:#09090b;--z900:#18181b;--z800:#27272a;--z700:#3f3f46;--z500:#71717a;--z400:#a1a1aa;--z200:#e4e4e7;--z100:#f4f4f5;--cy:#22d3ee;--cy5:#06b6d4;
+--sat:max(env(safe-area-inset-top,0px),24px);--sab:max(env(safe-area-inset-bottom,0px),12px)}
+html,body{background:var(--bg);color:var(--z100);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ic{width:1em;height:1em;display:inline-block;vertical-align:-.125em;flex:none}
+.flex{display:flex}.ac{align-items:center}.jb{justify-content:space-between}.gap1{gap:6px}.gap2{gap:8px}.gap3{gap:12px}.wrap{flex-wrap:wrap}
+#app{max-width:720px;margin:0 auto;padding:var(--sat) 14px var(--sab);display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:12px;border-bottom:1px solid var(--z800);padding-bottom:16px}
+h1{font-size:20px;font-weight:700;letter-spacing:-.01em;color:#fff;display:flex;align-items:center;gap:8px}
+h1 .ic{font-size:24px;color:var(--cy)}
+.sub{font-size:12px;color:var(--z400);margin-top:2px}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.reset{font-size:12px;color:var(--z500);display:flex;align-items:center;gap:6px;padding:6px 0;min-height:36px}
+.reset:active{color:var(--z200)}
+.pill{display:flex;align-items:center;gap:8px;background:rgba(24,24,27,.9);border:1px solid var(--z800);padding:6px 12px;border-radius:999px;font-size:12px}
+.pill .ic{color:var(--cy);font-size:14px}.pill b{color:var(--cy)}.pill span{color:var(--z400);font-weight:500}
+.panel{background:rgba(24,24,27,.7);border:1px solid var(--z800);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:20px;box-shadow:0 20px 40px rgba(0,0,0,.4)}
+.live{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(39,39,42,.6);padding-bottom:12px}
+.live label{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;min-height:40px}
+.sw{position:relative;width:40px;height:24px;flex:none}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.sw .tr{position:absolute;inset:0;background:var(--z800);border-radius:999px;transition:background .2s;pointer-events:none}
+.sw .th{position:absolute;left:4px;top:4px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;pointer-events:none}
+.sw input:checked~.tr{background:var(--cy5)}.sw input:checked~.th{transform:translateX(16px)}
+.sw input:focus-visible~.tr{outline:2px solid var(--cy);outline-offset:2px}
+.live .t{font-size:13px;font-weight:600;color:var(--z200);display:flex;align-items:center;gap:6px}
+.live .t .ic{font-size:16px}
+.on{color:var(--cy)}.off{color:var(--z500)}
+.tag{font-size:11px;color:var(--z500)}
+.blk{display:flex;flex-direction:column;gap:8px;transition:opacity .2s}
+.blk.dis{opacity:.3;pointer-events:none}
+.lbl{display:flex;justify-content:space-between;align-items:center}
+.lbl .l{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--z400);display:flex;align-items:center;gap:6px}
+.lbl .l .ic{color:var(--cy);font-size:14px}
+.lbl .v{font-size:11px;color:var(--cy)}
+.hv{font-weight:700;font-size:12px;color:var(--cy);background:rgba(8,51,68,.6);border:1px solid rgba(21,94,117,.6);padding:2px 8px;border-radius:4px}
+.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{padding:10px 0;font-size:12px;font-weight:600;border-radius:12px;border:1px solid rgba(63,63,70,.5);background:rgba(39,39,42,.4);color:var(--z400);transition:transform .1s}
+.day:active{transform:scale(.95)}
+.day.sel{background:rgba(6,182,212,.2);border-color:var(--cy);color:#67e8f9;box-shadow:0 8px 16px rgba(6,182,212,.1)}
+input[type=range]{width:100%;height:12px;background:var(--z800);border-radius:8px;accent-color:var(--cy);cursor:pointer;margin:6px 0}
+.ticks{display:flex;justify-content:space-between;font-size:10px;color:var(--z500);padding:0 2px}
+.sw-wrap{position:relative}
+.sbox{position:relative;display:flex;align-items:center}
+.sbox>.ic{position:absolute;left:14px;font-size:16px;color:var(--z500);pointer-events:none}
+.sbox input{width:100%;background:rgba(24,24,27,.9);border:1px solid var(--z800);border-radius:12px;padding:12px 40px;font-size:14px;color:var(--z100);outline:0}
+.sbox input::placeholder{color:var(--z500)}
+.sbox input:focus{border-color:rgba(6,182,212,.6);box-shadow:0 0 0 3px rgba(6,182,212,.2)}
+.clr{position:absolute;right:6px;padding:8px;color:var(--z500);display:flex;font-size:16px}
+.res{position:absolute;top:100%;left:0;right:0;margin-top:8px;max-height:240px;overflow-y:auto;background:var(--z900);border:1px solid var(--z800);border-radius:12px;box-shadow:0 20px 40px rgba(0,0,0,.6);z-index:30}
+.res button{width:100%;text-align:left;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;border-bottom:1px solid rgba(39,39,42,.6)}
+.res button:last-child{border-bottom:0}.res button:active{background:rgba(39,39,42,.7)}
+.res b{color:var(--z200);font-weight:600}.res span{font-size:11px;color:var(--z400)}
+.none{padding:16px;font-size:14px;color:var(--z400)}
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{padding:16px;border-radius:16px;border:1px solid rgba(39,39,42,.7);background:rgba(24,24,27,.5);display:flex;flex-direction:column;gap:12px}
+.card.home{background:rgba(8,51,68,.2);border-color:rgba(6,182,212,.4);box-shadow:0 8px 16px rgba(6,182,212,.05)}
+.cn{font-weight:700;font-size:16px;color:var(--z100)}.cz{font-size:12px;color:var(--z500)}
+.ct{font-size:19px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(39,39,42,.6);padding-top:10px}
+.badge{font-size:11px;padding:5px 10px;border-radius:8px;border:1px solid;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.b-w{background:rgba(24,24,27,.8);color:var(--z400);border-color:rgba(63,63,70,.6)}
+.b-o{background:rgba(5,46,22,.8);color:#34d399;border-color:rgba(6,78,59,.8);background:rgba(2,44,34,.8)}
+.b-f{background:rgba(76,5,25,.8);color:#fb7185;border-color:rgba(159,18,57,.8)}
+.rm{padding:7px 12px;font-size:12px;font-weight:500;background:rgba(39,39,42,.7);color:var(--z400);border:1px solid rgba(63,63,70,.5);border-radius:8px;display:flex;align-items:center;gap:4px}
+.rm:active{background:rgba(76,5,25,.8);color:#fda4af;border-color:#9f1239}
+button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+@media(min-width:640px){#app{padding:24px 24px 24px}header{flex-direction:row;align-items:center;justify-content:space-between}.hrow{justify-content:flex-end}.card{flex-direction:row;align-items:center;justify-content:space-between}.crow{border:0;padding:0}.ct{font-size:21px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+.alarms{display:flex;flex-direction:column;gap:10px}
+.mini{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;border:1px solid rgba(63,63,70,.6);background:rgba(39,39,42,.7);color:var(--z200);font-size:12px;font-weight:600;min-height:36px}
+.mini.pri{background:rgba(6,182,212,.2);border-color:var(--cy);color:#67e8f9}
+.note{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;color:var(--z200);background:rgba(8,51,68,.35);border:1px solid rgba(21,94,117,.6);border-radius:12px;padding:10px 12px}
+.note.warn{background:rgba(76,29,5,.35);border-color:rgba(146,64,14,.7);color:#fdba74}
+.hint{font-size:12px;color:var(--z500);line-height:1.5}
+.linkbtn{align-self:flex-start;font-size:12px;color:var(--cy);padding:8px 0;min-height:36px;text-decoration:underline}
+.alist{display:flex;flex-direction:column;gap:10px}
+.al{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border:1px solid rgba(39,39,42,.7);background:rgba(24,24,27,.5);border-radius:16px}
+.al.aoff .ainfo{opacity:.5}
+.ainfo{min-width:0;display:flex;flex-direction:column;gap:2px}
+.at{font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as{font-size:12px;color:var(--z400)}
+.an{font-size:11px;color:var(--cy);margin-top:2px}
+.aact{display:flex;align-items:center;gap:8px;flex:none}
+.ib{padding:9px;border-radius:10px;border:1px solid rgba(63,63,70,.5);background:rgba(39,39,42,.7);color:var(--z400);display:flex;font-size:16px}
+.ib:active{color:#fff}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:720px;max-height:92vh;overflow-y:auto;background:var(--z900);border:1px solid var(--z800);border-radius:20px 20px 0 0;padding:18px 16px calc(var(--sab) + 16px);display:flex;flex-direction:column;gap:14px}
+.sheet h2,.ringbox h2{font-size:17px;font-weight:700}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld>span{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--z400)}
+.fld input,.fld select{width:100%;background:var(--bg);border:1px solid var(--z800);border-radius:12px;padding:12px;font-size:15px;color:var(--z100);outline:0;color-scheme:dark;font-family:inherit}
+.fld input:focus,.fld select:focus{border-color:rgba(6,182,212,.6);box-shadow:0 0 0 3px rgba(6,182,212,.2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btns{display:flex;gap:10px}.btns button{flex:1;padding:13px;border-radius:12px;font-weight:700;font-size:14px;border:1px solid rgba(63,63,70,.6);background:rgba(39,39,42,.7)}
+.btns .go{background:var(--cy5);color:#04202a;border-color:var(--cy5)}
+.err{color:#fb7185;font-size:12px;min-height:16px}
+.ov.ring{align-items:center;padding:20px}
+.ringbox{width:100%;max-width:360px;background:var(--z900);border:1px solid var(--cy5);border-radius:20px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 0 40px rgba(6,182,212,.25)}
+.ringbox .ic{font-size:40px;color:var(--cy)}
+.ringbox button{width:100%}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<script>
+const COUNTRY_DATA=[
+{country:'Philippines',zones:['Asia/Manila']},
+{country:'United States',zones:['America/New_York','America/Chicago','America/Denver','America/Los_Angeles']},
+{country:'Japan',zones:['Asia/Tokyo']},
+{country:'United Kingdom',zones:['Europe/London']},
+{country:'Australia',zones:['Australia/Sydney','Australia/Perth']},
+{country:'Germany',zones:['Europe/Berlin']},
+{country:'Singapore',zones:['Asia/Singapore']},
+{country:'India',zones:['Asia/Kolkata']},
+{country:'United Arab Emirates',zones:['Asia/Dubai']},
+{country:'Canada',zones:['America/Toronto','America/Vancouver']}];
+const WEEKDAYS=[{label:'Mon',value:1},{label:'Tue',value:2},{label:'Wed',value:3},{label:'Thu',value:4},{label:'Fri',value:5},{label:'Sat',value:6},{label:'Sun',value:0}];
+const DEFAULT_CLOCKS=[{country:'Philippines',zone:'Asia/Manila'},{country:'United States',zone:'America/New_York'},{country:'United Kingdom',zone:'Europe/London'}];
+const HOME_ZONE='Asia/Manila';
+const svg=p=>`<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICONS={
+globe:svg('<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>'),
+clock:svg('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>'),
+reset:svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
+sliders:svg('<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>'),
+calendar:svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'),
+search:svg('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>'),
+x:svg('<path d="M18 6 6 18M6 6l12 12"/>'),
+trash:svg('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+briefcase:svg('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>'),
+moon:svg('<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'),
+coffee:svg('<path d="M10 2v2M14 2v2M6 2v2M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/>'),
+radio:svg('<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/>')};
+const store={get(k,f){try{const v=localStorage.getItem(k);return v===null?f:JSON.parse(v)}catch{return f}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
+const hourStart=()=>{const d=new Date();d.setMinutes(0,0,0);return d};
+const state={clocks:store.get('tzc_clocks',DEFAULT_CLOCKS),isLive:store.get('tzc_is_live',false),
+selectedDate:(()=>{const s=store.get('tzc_date',null);const d=s?new Date(s):null;return d&&!isNaN(d)?d:hourStart()})(),search:''};
+if(!Array.isArray(state.clocks)||!state.clocks.length)state.clocks=DEFAULT_CLOCKS;
+if(state.isLive)state.selectedDate=new Date();
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const formatTime=(date,timeZone)=>new Intl.DateTimeFormat('en-US',{timeZone,hour:'2-digit',minute:'2-digit',hour12:true,weekday:'short',month:'short',day:'numeric'}).format(date);
+function getWorkStatus(date,timeZone){
+const parts=new Intl.DateTimeFormat('en-US',{timeZone,weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(date);
+const wd=parts.find(p=>p.type==='weekday')?.value;
+const hour=parseInt(parts.find(p=>p.type==='hour')?.value||'0',10)%24;
+if(wd==='Sat'||wd==='Sun')return{label:'Weekend',icon:ICONS.coffee,cls:'b-w'};
+if(hour>=9&&hour<18)return{label:'Work Hours',icon:ICONS.briefcase,cls:'b-o'};
+return{label:'Off Hours',icon:ICONS.moon,cls:'b-f'}}
+function searchResults(){const q=state.search.trim().toLowerCase();if(!q)return[];const out=[];
+COUNTRY_DATA.forEach(i=>{const cm=i.country.toLowerCase().includes(q);i.zones.forEach(z=>{if(cm||z.toLowerCase().includes(q))out.push({country:i.country,zone:z})})});return out}
+const persistDate=()=>{if(!state.isLive)store.set('tzc_date',state.selectedDate.toISOString())};
+function setWeekday(t){state.isLive=false;store.set('tzc_is_live',false);const d=new Date(state.selectedDate);d.setDate(d.getDate()+(((t+6)%7)-((d.getDay()+6)%7)));state.selectedDate=d;persistDate();render()}
+function setHour(h){const wasLive=state.isLive;state.isLive=false;store.set('tzc_is_live',false);const d=new Date(state.selectedDate);d.setHours(h);state.selectedDate=d;persistDate();if(wasLive)render();else updateTimes()}
+function setLive(on){state.isLive=on;store.set('tzc_is_live',on);if(on)state.selectedDate=new Date();else persistDate();render()}
+function addClock(c,z){if(!state.clocks.some(x=>x.zone===z)){state.clocks=[...state.clocks,{country:c,zone:z}];store.set('tzc_clocks',state.clocks)}state.search='';render()}
+function removeClock(z){state.clocks=state.clocks.filter(c=>c.zone!==z);store.set('tzc_clocks',state.clocks);render()}
+function resetAll(){state.clocks=DEFAULT_CLOCKS;state.selectedDate=hourStart();state.isLive=false;state.search='';['tzc_clocks','tzc_date','tzc_is_live'].forEach(store.del);render()}
+const app=document.getElementById('app');
+function cardsHTML(){const d=state.selectedDate;return state.clocks.map(({country,zone})=>{const st=getWorkStatus(d,zone),home=zone===HOME_ZONE;
+return`<div class="card ${home?'home':''}"><div><div class="flex ac gap2 wrap"><span class="cn">${esc(country)}</span><span class="cz mono">(${esc(zone)})</span></div><div class="ct mono">${formatTime(d,zone)}</div></div>
+<div class="crow"><span class="badge ${st.cls}">${st.icon}${st.label}</span>${home?'':`<button data-remove="${esc(zone)}" class="rm">${ICONS.trash}<span>Remove</span></button>`}</div></div>`}).join('')}
+function bindCards(){app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClock(b.dataset.remove))}
+function updateTimes(){const d=state.selectedDate;const p=app.querySelector('.pill b');if(p)p.textContent=formatTime(d,HOME_ZONE);
+const hv=app.querySelector('.hv');if(hv)hv.textContent=String(d.getHours()).padStart(2,'0')+':00';
+const c=app.querySelector('.cards');if(c){c.innerHTML=cardsHTML();bindCards()}}
+
+function render(){
+const d=state.selectedDate,hour=d.getHours(),day=d.getDay(),live=state.isLive,results=searchResults();
+const ae=document.activeElement,keepSearch=ae&&ae.id==='search',caret=keepSearch?ae.selectionStart:null;
+app.innerHTML=`
+<header>
+<div><h1>${ICONS.globe}<span>Time Zone Comparator</span></h1><p class="sub">Align client meetings across regional time shifts</p></div>
+<div class="hrow">
+<button id="reset" class="reset">${ICONS.reset}<span>Reset Data</span></button>
+<div class="pill">${ICONS.clock}<span>PHT:</span><b class="mono">${formatTime(d,HOME_ZONE)}</b></div>
+</div></header>
+<section class="panel">
+<div class="live"><label><span class="sw"><input id="live" type="checkbox" ${live?'checked':''}><span class="tr"></span><span class="th"></span></span>
+<span class="t"><span class="${live?'on':'off'}" style="display:flex">${ICONS.radio}</span>Live Real-Time Sync</span></label>
+<span class="tag mono">${live?'LIVE CLOCK':'MANUAL SCRUBBER'}</span></div>
+<div class="blk ${live?'dis':''}"><div class="lbl"><span class="l">${ICONS.calendar}Day of Week</span><span class="v mono">${WEEKDAYS.find(w=>w.value===day).label}</span></div>
+<div class="days">${WEEKDAYS.map(w=>`<button data-day="${w.value}" ${live?'disabled':''} class="day ${day===w.value?'sel':''}">${w.label}</button>`).join('')}</div></div>
+<div class="blk ${live?'dis':''}"><div class="lbl"><span class="l">${ICONS.sliders}Scrub Target Hour</span><span class="hv mono">${String(hour).padStart(2,'0')}:00</span></div>
+<input id="hour" type="range" min="0" max="23" value="${hour}" ${live?'disabled':''} aria-label="Target hour">
+<div class="ticks mono"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div></div>
+</section>
+<div class="sw-wrap"><div class="sbox">${ICONS.search}
+<input id="search" type="text" autocomplete="off" placeholder="Search country or zone (e.g. Japan, London)..." value="${esc(state.search)}">
+${state.search?`<button id="clear" class="clr" aria-label="Clear search">${ICONS.x}</button>`:''}</div>
+${results.length?`<div class="res">${results.map(r=>`<button data-add="${esc(r.zone)}" data-country="${esc(r.country)}"><b>${esc(r.country)}</b><span class="mono">${esc(r.zone)}</span></button>`).join('')}</div>`:(state.search.trim()?`<div class="res none">No matches. Try a country like "Japan" or a zone like "Europe".</div>`:'')}
+</div>
+<div class="cards">${cardsHTML()}</div>
+${alarmsSectionHTML()}`;
+const $=s=>app.querySelector(s);
+$('#reset').onclick=resetAll;$('#live').onchange=e=>setLive(e.target.checked);
+app.querySelectorAll('[data-day]').forEach(b=>b.onclick=()=>setWeekday(+b.dataset.day));
+$('#hour').oninput=e=>setHour(+e.target.value);
+$('#search').oninput=e=>{state.search=e.target.value;render()};
+const c=$('#clear');if(c)c.onclick=()=>{state.search='';render();$('#search').focus()};
+app.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addClock(b.dataset.country,b.dataset.add));
+bindCards();bindAlarms();
+if(keepSearch){const s=$('#search');s.focus();try{s.setSelectionRange(caret,caret)}catch{}}
+}
+/* ===== Alarms & notifications ===== */
+ICONS.bell=svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>');
+ICONS.plus=svg('<path d="M12 5v14M5 12h14"/>');
+ICONS.edit=svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
+const LN=()=>{try{return window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()?window.Capacitor.Plugins.LocalNotifications:null}catch{return null}};
+const MAX_ALARMS=20,MAX_OCC=14,TEST_ID=2000000000;
+state.alarms=store.get('tzc_alarms',[]);if(!Array.isArray(state.alarms))state.alarms=[];
+state.notif={native:!!LN(),perm:'unknown',exact:'granted'};
+let alarmSeq=store.get('tzc_alarm_seq',0);
+const saveAlarms=()=>store.set('tzc_alarms',state.alarms);
+/*T-START*/
+const dtfCache={};
+function zdtf(zone){return dtfCache[zone]||(dtfCache[zone]=new Intl.DateTimeFormat('en-US',{timeZone:zone,hourCycle:'h23',year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',second:'numeric'}))}
+function zparts(ms,zone){const o={};zdtf(zone).formatToParts(new Date(ms)).forEach(x=>o[x.type]=x.value);return o}
+function tzOffset(ms,zone){const o=zparts(ms,zone);return Date.UTC(+o.year,+o.month-1,+o.day,+o.hour%24,+o.minute,+o.second)-(ms-(((ms%1000)+1000)%1000))}
+function zonedToUtc(y,m,d,hh,mm,zone){const guess=Date.UTC(y,m-1,d,hh,mm);let utc=guess-tzOffset(guess,zone);const off2=tzOffset(utc,zone);if(guess-off2!==utc)utc=guess-off2;return utc}
+function zoneYMD(ms,zone){const o=zparts(ms,zone);return{y:+o.year,m:+o.month,d:+o.day}}
+function occurrences(a,count,fromMs){const out=[];const[hh,mm]=a.time.split(':').map(Number);const lead=(a.lead||0)*60000;
+if(a.repeat==='once'){if(!a.date)return out;const[y,m,d]=a.date.split('-').map(Number);const ev=zonedToUtc(y,m,d,hh,mm,a.zone);if(ev-lead>=fromMs)out.push({ev,fire:ev-lead});return out}
+const t=zoneYMD(fromMs,a.zone);
+for(let i=0;i<70&&out.length<count;i++){const dt=new Date(Date.UTC(t.y,t.m-1,t.d+i));const wd=dt.getUTCDay();if(a.repeat==='weekdays'&&(wd===0||wd===6))continue;
+const ev=zonedToUtc(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate(),hh,mm,a.zone);if(ev-lead>=fromMs)out.push({ev,fire:ev-lead})}
+return out}
+/*T-END*/
+const ymdStr=({y,m,d})=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+const cityOf=z=>z.split('/').pop().replace(/_/g,' ');
+function zoneLabel(z){const it=COUNTRY_DATA.find(i=>i.zones.includes(z));return it?`${it.country} – ${cityOf(z)}`:z}
+function allZones(){const s=[];COUNTRY_DATA.forEach(i=>i.zones.forEach(z=>s.push(z)));return s}
+function fmt12(t){const[h,m]=t.split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
+const repeatText=a=>a.repeat==='daily'?'Every day':a.repeat==='weekdays'?'Mon–Fri':`Once · ${a.date}`;
+const leadText=l=>l?`${l} min before`:'At start time';
+function alarmBody(a,o){const zt=new Intl.DateTimeFormat('en-US',{timeZone:a.zone,hour:'numeric',minute:'2-digit'}).format(new Date(o.ev));
+const lt=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(o.ev));
+return`${a.lead?`Starts in ${a.lead} min`:'Starting now'}: ${zt} in ${cityOf(a.zone)} (${lt} your time)`}
+
+/* --- native scheduling --- */
+async function syncNotifications(){const ln=LN();if(!ln)return;
+try{const pend=await ln.getPending();const mine=(pend.notifications||[]).filter(n=>n.id!==TEST_ID);
+if(mine.length)await ln.cancel({notifications:mine.map(n=>({id:n.id}))});
+const now=Date.now(),list=[];
+state.alarms.forEach(a=>{if(!a.enabled)return;occurrences(a,MAX_OCC,now+5000).forEach((o,k)=>list.push({id:a.n*100+k,title:a.label||'Meeting reminder',body:alarmBody(a,o),schedule:{at:new Date(o.fire),allowWhileIdle:true},channelId:'alarms',smallIcon:'ic_stat_alarm',extra:{alarm:a.id}}))});
+if(list.length)await ln.schedule({notifications:list})}catch(e){console.error(e)}}
+async function refreshNotifState(){const ln=LN();
+if(ln){try{const p=await ln.checkPermissions();state.notif.perm=p.display;try{const e=await ln.checkExactNotificationSetting();state.notif.exact=e.exact_alarm}catch{}}catch(e){console.error(e)}}
+else if('Notification' in window){state.notif.perm=Notification.permission==='default'?'prompt':Notification.permission}
+else state.notif.perm='unsupported'}
+async function initNotifications(){const ln=LN();
+if(ln){try{await ln.createChannel({id:'alarms',name:'Alarms & reminders',description:'Meeting alarms and reminders',importance:5,visibility:1,vibration:true,lights:true})}catch(e){console.error(e)}}
+await refreshNotifState();await syncNotifications();render()}
+async function enableNotifications(){const ln=LN();
+if(ln){try{const p=await ln.requestPermissions();state.notif.perm=p.display}catch(e){console.error(e)}}
+else if('Notification' in window){try{const p=await Notification.requestPermission();state.notif.perm=p==='default'?'prompt':p}catch{}}
+await refreshNotifState();await syncNotifications();render()}
+async function allowExact(){const ln=LN();if(ln){try{await ln.changeExactNotificationSetting()}catch(e){console.error(e)}}}
+
+/* --- web fallback (page must be open) --- */
+const fired=store.get('tzc_fired',{});
+function checkWebAlarms(){if(state.notif.native||document.getElementById('ringok'))return;const now=Date.now();
+state.alarms.forEach(a=>{if(!a.enabled)return;const o=occurrences(a,1,now-90000)[0];
+if(o&&o.fire<=now&&fired[a.id]!==o.fire){fired[a.id]=o.fire;store.set('tzc_fired',fired);ring(a.label||'Meeting reminder',alarmBody(a,o))}})}
+let ringTimer=null,audioCtx=null;
+function beep(){try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=880;g.gain.value=.2;o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.25)}catch{}}
+function sheet(h){document.getElementById('sheet').innerHTML=h}
+function closeSheet(){sheet('')}
+function stopRing(){clearInterval(ringTimer);ringTimer=null;closeSheet()}
+function ring(title,body){
+sheet(`<div class="ov ring"><div class="ringbox" role="alertdialog">${ICONS.bell}<h2>${esc(title)}</h2><p class="as">${esc(body)}</p><button id="ringok" class="mini pri" style="justify-content:center;padding:12px">Dismiss</button></div></div>`);
+document.getElementById('ringok').onclick=stopRing;
+beep();clearInterval(ringTimer);let n=0;ringTimer=setInterval(()=>{beep();if(++n>40)stopRing()},1200);
+try{if(!state.notif.native&&'Notification' in window&&Notification.permission==='granted')new Notification(title,{body})}catch{}
+try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch{}}
+
+/* --- UI --- */
+function alarmListHTML(){
+if(!state.alarms.length)return'<p class="hint">No alarms yet. Tap Add to set a meeting reminder in any time zone.</p>';
+return state.alarms.map(a=>{const nx=occurrences(a,1,Date.now())[0];
+const nt=nx?'Next alert: '+new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(nx.fire))+' (your time)':(a.repeat==='once'?'Finished':'No upcoming alert');
+return`<div class="al ${a.enabled&&nx?'':'aoff'}"><div class="ainfo"><div class="at">${esc(a.label||'Meeting')}</div>
+<div class="as mono">${fmt12(a.time)} · ${esc(zoneLabel(a.zone))}</div><div class="as">${repeatText(a)} · ${leadText(a.lead)}</div><div class="an">${nt}</div></div>
+<div class="aact"><label class="sw" aria-label="Alarm on or off"><input type="checkbox" data-atoggle="${a.id}" ${a.enabled?'checked':''}><span class="tr"></span><span class="th"></span></label>
+<button class="ib" data-aedit="${a.id}" aria-label="Edit alarm">${ICONS.edit}</button><button class="ib" data-adel="${a.id}" aria-label="Delete alarm">${ICONS.trash}</button></div></div>`}).join('')}
+function alarmsSectionHTML(){const n=state.notif;let b='';
+if(n.perm==='prompt'||n.perm==='prompt-with-rationale')b='<div class="note"><span>Turn on notifications to receive alarms.</span><button id="enableNotif" class="mini">Enable</button></div>';
+else if(n.perm==='denied')b='<div class="note warn"><span>Notifications are blocked. Allow them for this app in your device settings.</span></div>';
+else if(n.perm==='unsupported')b='<div class="note warn"><span>This browser does not support notifications. Alarms will ring on screen only.</span></div>';
+else if(n.native&&n.exact==='denied')b='<div class="note warn"><span>For on-time alarms, allow Alarms &amp; reminders for this app.</span><button id="allowExact" class="mini">Open settings</button></div>';
+return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.bell}Alarms &amp; reminders</span><button id="addAlarm" class="mini pri">${ICONS.plus}<span>Add</span></button></div>${b}<div class="alist">${alarmListHTML()}</div>
+<button id="testAlert" class="linkbtn">Send a test alert in 5 seconds</button>${n.native?'':'<p class="hint">In a browser, alerts only sound while this page is open. The Android app can alert you in the background.</p>'}</section>`}
+function bindAlarmList(){
+app.querySelectorAll('[data-atoggle]').forEach(i=>i.onchange=async()=>{const a=state.alarms.find(x=>x.id===i.dataset.atoggle);if(a){a.enabled=i.checked;saveAlarms();await syncNotifications();updateAlarmList()}});
+app.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>openAlarmForm(b.dataset.aedit));
+app.querySelectorAll('[data-adel]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this alarm?'))return;state.alarms=state.alarms.filter(x=>x.id!==b.dataset.adel);saveAlarms();await syncNotifications();updateAlarmList()})}
+function updateAlarmList(){const l=app.querySelector('.alist');if(l){l.innerHTML=alarmListHTML();bindAlarmList()}}
+function bindAlarms(){const $=s=>app.querySelector(s);
+const a=$('#addAlarm');if(a)a.onclick=()=>openAlarmForm();
+const e=$('#enableNotif');if(e)e.onclick=enableNotifications;
+const x=$('#allowExact');if(x)x.onclick=allowExact;
+const t=$('#testAlert');if(t)t.onclick=testAlert;
+bindAlarmList()}
+async function testAlert(){const ln=LN();
+if(ln){if(state.notif.perm!=='granted'){await enableNotifications();if(state.notif.perm!=='granted')return}
+try{await ln.schedule({notifications:[{id:TEST_ID,title:'Test alert',body:'Notifications are working.',schedule:{at:new Date(Date.now()+5000),allowWhileIdle:true},channelId:'alarms',smallIcon:'ic_stat_alarm'}]})}catch(e){console.error(e)}}
+else{if(state.notif.perm==='prompt')await enableNotifications();setTimeout(()=>ring('Test alert','Alerts are working while this page is open.'),5000)}
+const b=document.getElementById('testAlert');if(b){b.textContent='Test alert scheduled…';setTimeout(()=>{const y=document.getElementById('testAlert');if(y)y.textContent='Send a test alert in 5 seconds'},5500)}}
+function openAlarmForm(id){
+const ex=id?state.alarms.find(a=>a.id===id):null;
+if(!ex&&state.alarms.length>=MAX_ALARMS){alert('You can have up to '+MAX_ALARMS+' alarms.');return}
+const zones=[...new Set([...state.clocks.map(c=>c.zone),...allZones()])];
+const dz=ex?ex.zone:(state.clocks.find(c=>c.zone!==HOME_ZONE)||state.clocks[0]).zone;
+const a=ex||{label:'',zone:dz,time:'09:00',repeat:'once',date:ymdStr(zoneYMD(Date.now(),dz)),lead:15};
+sheet(`<div class="ov" id="ov"><div class="sheet" role="dialog" aria-label="${ex?'Edit alarm':'New alarm'}"><h2>${ex?'Edit alarm':'New alarm'}</h2>
+<label class="fld"><span>Label</span><input id="af-label" type="text" maxlength="40" placeholder="e.g. Client call" value="${esc(a.label)}"></label>
+<label class="fld"><span>Time zone of the meeting</span><select id="af-zone">${zones.map(z=>`<option value="${esc(z)}" ${z===a.zone?'selected':''}>${esc(zoneLabel(z))}</option>`).join('')}</select></label>
+<div class="two"><label class="fld"><span>Time (in that zone)</span><input id="af-time" type="time" value="${a.time}"></label>
+<label class="fld"><span>Repeat</span><select id="af-repeat"><option value="once" ${a.repeat==='once'?'selected':''}>Once</option><option value="daily" ${a.repeat==='daily'?'selected':''}>Every day</option><option value="weekdays" ${a.repeat==='weekdays'?'selected':''}>Mon–Fri</option></select></label></div>
+<label class="fld" id="af-datewrap" style="${a.repeat==='once'?'':'display:none'}"><span>Date (in that zone)</span><input id="af-date" type="date" value="${a.date||''}"></label>
+<label class="fld"><span>Remind me</span><select id="af-lead">${[0,5,10,15,30,60].map(v=>`<option value="${v}" ${v===a.lead?'selected':''}>${leadText(v)}</option>`).join('')}</select></label>
+<div class="err" id="af-err" role="alert"></div>
+<div class="btns"><button id="af-cancel" type="button">Cancel</button><button id="af-save" type="button" class="go">Save</button></div></div></div>`);
+const g=i=>document.getElementById(i);
+g('ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};
+g('af-cancel').onclick=closeSheet;
+g('af-repeat').onchange=e=>{g('af-datewrap').style.display=e.target.value==='once'?'':'none'};
+g('af-save').onclick=async()=>{
+const rec={label:g('af-label').value.trim().slice(0,40),zone:g('af-zone').value,time:g('af-time').value,repeat:g('af-repeat').value,date:g('af-date').value,lead:+g('af-lead').value};
+const err=g('af-err');
+if(!/^\d{2}:\d{2}$/.test(rec.time)){err.textContent='Choose a time.';return}
+if(rec.repeat==='once'){if(!rec.date){err.textContent='Choose a date.';return}if(!occurrences(rec,1,Date.now())[0]){err.textContent='That alert time has already passed.';return}}
+if(ex)Object.assign(ex,rec,{enabled:true});else state.alarms.push({id:'a'+Date.now(),n:++alarmSeq,enabled:true,...rec});
+store.set('tzc_alarm_seq',alarmSeq);saveAlarms();closeSheet();
+if(state.notif.perm==='prompt')await enableNotifications();else{await syncNotifications();render()}}}
+document.addEventListener('visibilitychange',async()=>{if(!document.hidden){await refreshNotifState();await syncNotifications();render()}});
+setInterval(checkWebAlarms,1000);
+setInterval(updateAlarmList,30000);
+
+setInterval(()=>{if(state.isLive){state.selectedDate=new Date();updateTimes()}},1000);
+render();
+initNotifications();
+</script>
+</body>
+</html>

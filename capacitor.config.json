@@ -1,0 +1,16 @@
+{
+  "appId": "com.yourname.timezonecomparator",
+  "appName": "Time Zone Comparator",
+  "webDir": "www",
+  "backgroundColor": "#09090b",
+  "android": {
+    "backgroundColor": "#09090b",
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_alarm",
+      "iconColor": "#06B6D4"
+    }
+  }
+}

@@ -1,0 +1,123 @@
+name: Build Android AAB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android platform (first run only)
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+
+      - name: Notification icon and permissions
+        run: bash scripts/android-setup.sh
+
+      - name: Generate launcher icons
+        run: npx capacitor-assets generate --android
+
+      - name: Sync web assets
+        run: npx cap sync android
+
+      - name: Set version from run number
+        run: |
+          F=android/app/build.gradle
+          sed -i -E "s/(versionCode[ =]+)[0-9]+/\1${{ github.run_number }}/" $F
+          sed -i -E "s/(versionName[ =]+)\"[^\"]*\"/\1\"1.0.${{ github.run_number }}\"/" $F
+          grep -nE "versionCode|versionName" $F
+
+      - name: Build release bundle (unsigned)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
+          ls -la app/build/outputs/bundle/release/
+
+      - name: Prepare signing key
+        run: |
+          mkdir -p out
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using the signing key stored in repository secrets."
+            echo "$KEYSTORE_BASE64" | base64 -d > release.jks
+            echo "SIGN_PW=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
+            echo "SIGN_ALIAS=$KEY_ALIAS_SECRET" >> $GITHUB_ENV
+            echo "NEW_KEY=false" >> $GITHUB_ENV
+          else
+            echo "No signing key in secrets, creating a new one."
+            PW=$(openssl rand -hex 16)
+            echo "::add-mask::$PW"
+            keytool -genkeypair -keystore release.jks -storetype PKCS12 -alias upload \
+              -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PW" -keypass "$PW" \
+              -dname "CN=Time Zone Comparator, O=Personal, C=US"
+            cp release.jks out/release.jks
+            {
+              echo "SAVE THIS FILE AND release.jks SOMEWHERE SAFE. You need them for every app update."
+              echo
+              echo "Key alias:          upload"
+              echo "Keystore password:  $PW"
+              echo "Key password:       $PW"
+              echo
+              echo "To reuse this key in future builds, add these repository secrets:"
+              echo "  KEYSTORE_BASE64   = (the long text below)"
+              echo "  KEYSTORE_PASSWORD = $PW"
+              echo "  KEY_ALIAS         = upload"
+              echo
+              echo "KEYSTORE_BASE64 value:"
+              base64 -w0 release.jks
+              echo
+            } > out/KEYSTORE-INFO.txt
+            echo "SIGN_PW=$PW" >> $GITHUB_ENV
+            echo "SIGN_ALIAS=upload" >> $GITHUB_ENV
+            echo "NEW_KEY=true" >> $GITHUB_ENV
+          fi
+
+      - name: Sign the bundle
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -keystore release.jks -storepass "$SIGN_PW" -keypass "$SIGN_PW" \
+            -sigalg SHA256withRSA -digestalg SHA-256 "$AAB" "$SIGN_ALIAS"
+          jarsigner -verify "$AAB" | head -3
+          cp "$AAB" out/app-release.aab
+          rm -f release.jks
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-aab
+          path: out/app-release.aab
+
+      - name: Upload the NEW signing key (keep it safe)
+        if: env.NEW_KEY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: SAVE-THIS-signing-key
+          path: |
+            out/release.jks
+            out/KEYSTORE-INFO.txt
+
+      - name: Summary
+        run: |
+          echo "### Build finished" >> $GITHUB_STEP_SUMMARY
+          echo "Download **app-release-aab** below and upload it to Google Play Console." >> $GITHUB_STEP_SUMMARY
+          if [ "$NEW_KEY" = "true" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**A new signing key was created.** Also download **SAVE-THIS-signing-key** and keep it safe." >> $GITHUB_STEP_SUMMARY
+          fi
