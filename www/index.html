@@ -110,6 +110,8 @@ button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 .ringbox{width:100%;max-width:360px;background:var(--z900);border:1px solid var(--cy5);border-radius:20px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 0 40px rgba(6,182,212,.25)}
 .ringbox .ic{font-size:40px;color:var(--cy)}
 .ringbox button{width:100%}
+.acts{display:flex;gap:8px;align-items:center}
+.wzon{background:rgba(6,182,212,.2)!important;border-color:var(--cy)!important;color:#67e8f9!important}
 .soundrow{display:flex;gap:8px}.soundrow select{flex:1;min-width:0}.soundrow .mini{flex:none;min-width:104px;justify-content:center}
 </style>
 </head>
@@ -168,12 +170,12 @@ function setHour(h){const wasLive=state.isLive;state.isLive=false;store.set('tzc
 function setLive(on){state.isLive=on;store.set('tzc_is_live',on);if(on)state.selectedDate=new Date();else persistDate();render()}
 function addClock(c,z){if(!state.clocks.some(x=>x.zone===z)){state.clocks=[...state.clocks,{country:c,zone:z}];store.set('tzc_clocks',state.clocks)}state.search='';render()}
 function removeClock(z){state.clocks=state.clocks.filter(c=>c.zone!==z);store.set('tzc_clocks',state.clocks);render()}
-function resetAll(){state.clocks=DEFAULT_CLOCKS;state.selectedDate=hourStart();state.isLive=false;state.search='';['tzc_clocks','tzc_date','tzc_is_live'].forEach(store.del);render()}
+function resetAll(){state.clocks=DEFAULT_CLOCKS;state.selectedDate=hourStart();state.isLive=false;state.search='';['tzc_clocks','tzc_date','tzc_is_live','tzc_widget_zones'].forEach(store.del);state.wz=null;render()}
 const app=document.getElementById('app');
-function cardsHTML(){const d=state.selectedDate;return state.clocks.map(({country,zone})=>{const st=getWorkStatus(d,zone),home=zone===HOME_ZONE;
+function cardsHTML(){const d=state.selectedDate;const wzs=state.notif&&state.notif.native?widgetZones():[];return state.clocks.map(({country,zone})=>{const st=getWorkStatus(d,zone),home=zone===HOME_ZONE;
 return`<div class="card ${home?'home':''}"><div><div class="flex ac gap2 wrap"><span class="cn">${esc(country)}</span><span class="cz mono">(${esc(zone)})</span></div><div class="ct mono">${formatTime(d,zone)}</div></div>
-<div class="crow"><span class="badge ${st.cls}">${st.icon}${st.label}</span>${home?'':`<button data-remove="${esc(zone)}" class="rm">${ICONS.trash}<span>Remove</span></button>`}</div></div>`}).join('')}
-function bindCards(){app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClock(b.dataset.remove))}
+<div class="crow"><span class="badge ${st.cls}">${st.icon}${st.label}</span><span class="acts">${state.notif&&state.notif.native?`<button data-wz="${esc(zone)}" class="rm ${wzs.includes(zone)?'wzon':''}" aria-pressed="${wzs.includes(zone)}">${ICONS.pin}<span>${wzs.includes(zone)?'On widget':'Widget'}</span></button>`:''}${home?'':`<button data-remove="${esc(zone)}" class="rm">${ICONS.trash}<span>Remove</span></button>`}</span></div></div>`}).join('')}
+function bindCards(){app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClock(b.dataset.remove));app.querySelectorAll('[data-wz]').forEach(b=>b.onclick=()=>toggleWidgetZone(b.dataset.wz))}
 function updateTimes(){const d=state.selectedDate;const p=app.querySelector('.pill b');if(p)p.textContent=formatTime(d,HOME_ZONE);
 const hv=app.querySelector('.hv');if(hv)hv.textContent=String(d.getHours()).padStart(2,'0')+':00';
 const c=app.querySelector('.cards');if(c){c.innerHTML=cardsHTML();bindCards()}}
@@ -204,6 +206,7 @@ ${state.search?`<button id="clear" class="clr" aria-label="Clear search">${ICONS
 ${results.length?`<div class="res">${results.map(r=>`<button data-add="${esc(r.zone)}" data-country="${esc(r.country)}"><b>${esc(r.country)}</b><span class="mono">${esc(r.zone)}</span></button>`).join('')}</div>`:(state.search.trim()?`<div class="res none">No matches. Try a country like "Japan" or a zone like "Europe".</div>`:'')}
 </div>
 <div class="cards">${cardsHTML()}</div>
+${widgetSectionHTML()}
 ${alarmsSectionHTML()}`;
 const $=s=>app.querySelector(s);
 $('#reset').onclick=resetAll;$('#live').onchange=e=>setLive(e.target.checked);
@@ -212,14 +215,18 @@ $('#hour').oninput=e=>setHour(+e.target.value);
 $('#search').oninput=e=>{state.search=e.target.value;render()};
 const c=$('#clear');if(c)c.onclick=()=>{state.search='';render();$('#search').focus()};
 app.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>addClock(b.dataset.country,b.dataset.add));
-bindCards();bindAlarms();
+bindCards();bindAlarms();syncWidget();
 if(keepSearch){const s=$('#search');s.focus();try{s.setSelectionRange(caret,caret)}catch{}}
 }
 /* ===== Alarms & notifications ===== */
 ICONS.bell=svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>');
 ICONS.plus=svg('<path d="M12 5v14M5 12h14"/>');
+ICONS.pin=svg('<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>');
 ICONS.edit=svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>');
-const LN=()=>{try{return window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()?window.Capacitor.Plugins.LocalNotifications:null}catch{return null}};
+const isNative=()=>{try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch{return false}};
+function nativePlugin(name){if(!isNative())return null;const C=window.Capacitor;try{if(C.Plugins&&C.Plugins[name])return C.Plugins[name];if(C.registerPlugin)return C.registerPlugin(name)}catch{}return null}
+const LN=()=>nativePlugin('LocalNotifications');
+const CW=()=>nativePlugin('ClockWidget');
 const MAX_ALARMS=20,TEST_ID=2000000000;
 const SOUNDS=[{id:'classic',name:'Classic bell'},{id:'digital',name:'Digital beeps'},{id:'melody',name:'Melody'},{id:'siren',name:'Siren'},{id:'chime',name:'Chime'},{id:'pulse',name:'Pulse'}];
 const soundOf=id=>SOUNDS.some(x=>x.id===id)?id:'classic';
@@ -248,6 +255,23 @@ for(let i=0;i<70&&out.length<count;i++){const dt=new Date(Date.UTC(t.y,t.m-1,t.d
 const ev=zonedToUtc(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate(),hh,mm,a.zone);if(ev-lead>=fromMs)out.push({ev,fire:ev-lead})}
 return out}
 /*T-END*/
+/* --- home-screen widget (Android only) --- */
+state.wz=store.get('tzc_widget_zones',null);
+function widgetZones(){const have=state.clocks.map(c=>c.zone);let z=Array.isArray(state.wz)?state.wz.filter(x=>have.includes(x)):[];if(!z.length)z=have.slice(0,4);return z.slice(0,4)}
+const widgetClocks=()=>widgetZones().map(z=>({label:cityOf(z),zone:z}));
+let lastWidgetJson='',widgetFails=0;
+function syncWidget(){const cw=CW();if(!cw||widgetFails>=3)return;const j=JSON.stringify(widgetClocks());if(j===lastWidgetJson)return;lastWidgetJson=j;
+try{const p=cw.setClocks({clocks:widgetClocks()});if(p&&p.then)p.then(()=>{widgetFails=0},()=>{widgetFails++;lastWidgetJson=''})}catch{widgetFails++;lastWidgetJson=''}}
+function toggleWidgetZone(zone){const cur=widgetZones();let next;
+if(cur.includes(zone)){if(cur.length<=1){alert('Keep at least one clock on the widget.');return}next=cur.filter(z=>z!==zone)}
+else{if(cur.length>=4){alert('The widget shows up to 4 clocks. Remove one first.');return}next=[...cur,zone]}
+state.wz=next;store.set('tzc_widget_zones',next);render()}
+const HOWTO='Press and hold an empty spot on your home screen, tap Widgets, then choose Time Zone Clocks.';
+async function pinWidget(){const cw=CW();if(!cw)return;lastWidgetJson='';widgetFails=0;syncWidget();
+try{const r=await cw.pin();if(!r||!r.requested)alert(HOWTO)}catch{alert(HOWTO)}}
+function widgetSectionHTML(){if(!state.notif.native)return'';
+return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.pin}Home screen widget</span><button id="pinWidget" class="mini pri">${ICONS.plus}<span>Add widget</span></button></div>
+<p class="hint">Live clocks for up to 4 time zones (${widgetZones().length} selected). Tap <b>Widget</b> on a clock above to choose which ones appear. If nothing happens: ${HOWTO.charAt(0).toLowerCase()+HOWTO.slice(1)}</p></section>`}
 const ymdStr=({y,m,d})=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const cityOf=z=>z.split('/').pop().replace(/_/g,' ');
 function zoneLabel(z){const it=COUNTRY_DATA.find(i=>i.zones.includes(z));return it?`${it.country} – ${cityOf(z)}`:z}
@@ -323,6 +347,7 @@ app.querySelectorAll('[data-adel]').forEach(b=>b.onclick=async()=>{if(!confirm('
 function updateAlarmList(){const l=app.querySelector('.alist');if(l){l.innerHTML=alarmListHTML();bindAlarmList()}}
 function bindAlarms(){const $=s=>app.querySelector(s);
 const a=$('#addAlarm');if(a)a.onclick=()=>openAlarmForm();
+const pw=$('#pinWidget');if(pw)pw.onclick=pinWidget;
 const e=$('#enableNotif');if(e)e.onclick=enableNotifications;
 const x=$('#allowExact');if(x)x.onclick=allowExact;
 const t=$('#testAlert');if(t)t.onclick=testAlert;

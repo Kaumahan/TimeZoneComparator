@@ -49,6 +49,7 @@ Requires Node 20+, Android Studio, JDK 21.
 npm install
 npx cap add android
 npm run setup-android   # notification icon + alarm permissions
+npm run setup-widget    # home screen clock widget (optional)
 npm run assets          # generates launcher icons + splash from /resources
 npx cap sync android
 npx cap open android
@@ -60,7 +61,21 @@ After editing `www/index.html`, run `npx cap sync android` and rebuild.
 
 ---
 
-## Alarms & notifications (new)
+## Home screen widget (new)
+
+The app includes an Android widget that shows up to 4 live clocks (city, day, time).
+
+* In the app tap **Add widget** (Android 8+ shows a confirmation), or press and hold an empty spot on the home
+  screen → Widgets → **Time Zone Clocks**. It can be resized, and tapping it opens the app.
+* Choose which clocks appear with the **Widget** button on each clock. The list syncs whenever you open the app or
+  change it. The times tick by themselves, with no background work.
+* How it is built: `android-extras/widget/` (Java + layout) is copied in by `scripts/android-widget.sh`, which also
+  registers the receiver in the manifest and a small plugin in `MainActivity`.
+* **If the build ever fails with Java or resource errors from the widget:** in GitHub go to Settings → Secrets and
+  variables → Actions → Variables → New repository variable, name `DISABLE_WIDGET`, value `true`, and run the build
+  again. The app builds without the widget. Send me the error text and I'll fix it.
+
+## Alarms & notifications
 
 The app can schedule meeting alarms in any time zone. In the Android app they are scheduled with the
 phone's alarm system, so they fire even when the app is closed (and are re-scheduled after a reboot).

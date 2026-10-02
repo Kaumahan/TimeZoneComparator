@@ -1,18 +1,61 @@
-# Privacy Policy – Time Zone Comparator
+# Privacy Policy for Time Zone Comparator
 
-Last updated: October 1, 2026
+**Effective date:** October 2, 2026
+**Developer:** [YOUR NAME OR COMPANY NAME]
+**Contact:** [YOUR EMAIL ADDRESS]
 
-Time Zone Comparator ("the app") does not collect, transmit, sell, or share any personal information.
+This Privacy Policy explains how the Time Zone Comparator app ("the app") handles information. In short: **the app does not collect, transmit, sell, or share your personal information.** Everything you enter stays on your device.
 
-**What stays on your device.** The app saves your chosen clocks, alarms, selected day/time and live-sync setting in
-local storage on your device so they are there next time you open it. This data never leaves your device and
-is removed if you tap "Reset Data", clear the app's storage, or uninstall the app.
+## 1. Information we collect
 
-**No accounts, ads or analytics.** The app has no sign-in, no advertising, no analytics or crash-reporting
-services, and does not request internet access. The app asks for permission to show notifications and to schedule alarms, which it uses only to alert you about the reminders you create. These alerts are generated on your device.
+We do not collect any personal information. The app has no accounts, no sign-in, no advertising, and no analytics or crash-reporting services. We do not receive any data from your device.
 
-**Children.** The app is not directed to children and collects no data from anyone.
+## 2. Information stored on your device
 
-**Changes.** If this policy changes, the updated version will be posted at the same location with a new date.
+To work properly, the app saves the following on your device only:
 
-**Contact.** [your name or company] – [your email address]
+- The list of clocks (countries and time zones) you add
+- Your chosen day and time on the time scrubber, and the live-sync setting
+- Alarms you create: label, time zone, time, date, repeat setting, reminder lead time, and chosen alarm sound
+- Which clocks you selected for the home screen widget
+- Your last chosen alarm sound
+
+This information is stored in the app's private storage on your device. It is not sent to us or to anyone else. You can delete it at any time by tapping "Reset Data" in the app, by clearing the app's storage in your device settings, or by uninstalling the app.
+
+## 3. Permissions the app uses
+
+- **Notifications:** to show alerts for the alarms and reminders you create.
+- **Exact alarms / schedule alarms:** to fire your alarms at the exact time you set, even when the app is closed.
+- **Run at startup (boot completed):** to restore your scheduled alarms after your device restarts.
+- **Vibrate and wake lock:** to vibrate and wake the device when an alarm goes off.
+- **Internet access:** the app is built with a standard Android framework that includes this permission. The app does not use it to send or receive your data and works fully offline.
+
+The app does not request access to your location, contacts, camera, microphone, photos, files, or phone number.
+
+## 4. Home screen widget
+
+The optional widget displays the clocks you selected, using your device's own clock. The clock list is kept on your device and is not shared.
+
+## 5. Third parties
+
+The app contains no third-party advertising, analytics, or tracking tools, and we do not share information with third parties. Google Play, which distributes the app, may process information about app installs under its own privacy policy.
+
+## 6. Children's privacy
+
+The app is not directed to children under 13, and we do not knowingly collect information from anyone, including children.
+
+## 7. Data retention and deletion
+
+Because we do not collect your data, we hold nothing about you. Data stored in the app on your device is kept until you delete it using the steps in section 2.
+
+## 8. Security
+
+Your data stays in the app's private storage on your device and is protected by your device's own security. Because we do not collect or transmit your data, there is nothing for us to secure on a server.
+
+## 9. Changes to this policy
+
+If this policy changes, we will post the updated version at this same address and update the effective date above. Continued use of the app after a change means you accept the updated policy.
+
+## 10. Contact us
+
+If you have questions about this Privacy Policy, contact: **[YOUR EMAIL ADDRESS]**

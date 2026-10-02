@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_label">Time Zone Clocks</string>
+    <string name="widget_description">Live clocks for the time zones you choose in the app.</string>
+</resources>

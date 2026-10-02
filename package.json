@@ -6,7 +6,8 @@
   "scripts": {
     "assets": "npx capacitor-assets generate --android",
     "sync": "npx cap sync android",
-    "setup-android": "bash scripts/android-setup.sh"
+    "setup-android": "bash scripts/android-setup.sh",
+    "setup-widget": "bash scripts/android-widget.sh"
   },
   "dependencies": {
     "@capacitor/android": "latest",

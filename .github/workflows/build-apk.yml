@@ -28,6 +28,10 @@ jobs:
       - name: Notification icon and permissions
         run: bash scripts/android-setup.sh
 
+      - name: Home screen widget
+        if: ${{ vars.DISABLE_WIDGET != 'true' }}
+        run: bash scripts/android-widget.sh
+
       - name: Generate launcher icons
         run: npx capacitor-assets generate --android
 
