@@ -1,0 +1,50 @@
+name: Check signing key (prints SHA-1 fingerprint)
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha1:
+        description: "Fingerprint Google Play expects (optional, e.g. 08:B4:E2:01:...)"
+        required: false
+        default: ""
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      EXPECTED: ${{ github.event.inputs.expected_sha1 }}
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Read fingerprint from the key in repository secrets
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No KEYSTORE_BASE64 secret found. Add the secrets first." | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > release.jks
+          keytool -list -v -keystore release.jks -storepass "$KEYSTORE_PASSWORD" > info.txt
+          SHA1=$(grep -m1 "SHA1:" info.txt | sed 's/.*SHA1: *//')
+          echo "Key fingerprint in your secrets: $SHA1"
+          {
+            echo "### Signing key in repository secrets"
+            echo ""
+            echo "SHA-1: \`$SHA1\`"
+          } >> $GITHUB_STEP_SUMMARY
+          if [ -n "$EXPECTED" ]; then
+            A=$(echo "$SHA1" | tr -d ': ' | tr 'a-f' 'A-F')
+            B=$(echo "$EXPECTED" | tr -d ': ' | tr 'a-f' 'A-F')
+            if [ "$A" = "$B" ]; then
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**MATCH.** This is the key Google Play expects. You can build now." | tee -a $GITHUB_STEP_SUMMARY
+            else
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**NO MATCH.** This is not the key Google Play expects. Try the key from another build." | tee -a $GITHUB_STEP_SUMMARY
+              exit 1
+            fi
+          fi

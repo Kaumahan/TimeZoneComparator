@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Idempotent edits to the generated Android project. Usage: patch_android.py perms|widget"""
+"""Idempotent edits to the generated Android project.
+
+Usage: patch_android.py perms
+       patch_android.py native      (honours DISABLE_WIDGET / DISABLE_ALARM / DISABLE_CALENDAR = true)
+"""
 import glob
+import os
 import re
 import sys
 
@@ -17,28 +22,39 @@ def write(path, text):
         f.write(text)
 
 
-def perms():
-    s = read(MANIFEST)
-    wanted = [
-        ("POST_NOTIFICATIONS", ""),
-        ("RECEIVE_BOOT_COMPLETED", ""),
-        ("VIBRATE", ""),
-        ("WAKE_LOCK", ""),
-        # Android 12/12L only; Android 13+ uses USE_EXACT_ALARM which is granted automatically.
-        ("SCHEDULE_EXACT_ALARM", ' android:maxSdkVersion="32"'),
-        ("USE_EXACT_ALARM", ""),
-    ]
+def off(name):
+    return os.environ.get(name, "").strip().lower() == "true"
+
+
+def add_permissions(s, wanted):
     add = ""
     for name, extra in wanted:
         if 'android.permission.%s"' % name not in s:
             add += '    <uses-permission android:name="android.permission.%s"%s />\n' % (name, extra)
     if add:
         s = s.replace("</manifest>", add + "</manifest>", 1)
-        write(MANIFEST, s)
+    return s
+
+
+def perms():
+    s = read(MANIFEST)
+    s = add_permissions(
+        s,
+        [
+            ("POST_NOTIFICATIONS", ""),
+            ("RECEIVE_BOOT_COMPLETED", ""),
+            ("VIBRATE", ""),
+            ("WAKE_LOCK", ""),
+            # Only used by the fallback notification path (Android 12/12L). The main alarm engine uses
+            # AlarmManager.setAlarmClock, which needs no exact-alarm permission, so USE_EXACT_ALARM is not requested.
+            ("SCHEDULE_EXACT_ALARM", ' android:maxSdkVersion="32"'),
+        ],
+    )
+    write(MANIFEST, s)
     print("permissions ok")
 
 
-RECEIVER = """        <receiver
+WIDGET_RECEIVER = """        <receiver
             android:name="com.tzcomparator.widget.ClockWidgetProvider"
             android:exported="true"
             android:label="@string/widget_label">
@@ -51,49 +67,69 @@ RECEIVER = """        <receiver
         </receiver>
 """
 
+ALARM_RECEIVERS = """        <receiver
+            android:name="com.tzcomparator.alarm.AlarmReceiver"
+            android:exported="false" />
+        <receiver
+            android:name="com.tzcomparator.alarm.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+"""
 
-def widget():
+
+def native():
+    use_widget = not off("DISABLE_WIDGET")
+    use_alarm = not off("DISABLE_ALARM")
+    use_calendar = not off("DISABLE_CALENDAR")
+
     s = read(MANIFEST)
-    if "ClockWidgetProvider" not in s:
-        if "</application>" not in s:
-            sys.exit("ERROR: </application> not found in AndroidManifest.xml")
-        s = s.replace("</application>", RECEIVER[4:] + "    </application>", 1)
-        write(MANIFEST, s)
-    print("widget receiver ok")
+    if "</application>" not in s:
+        sys.exit("ERROR: </application> not found in AndroidManifest.xml")
+    receivers = ""
+    if use_widget and "ClockWidgetProvider" not in s:
+        receivers += WIDGET_RECEIVER
+    if use_alarm and "com.tzcomparator.alarm.AlarmReceiver" not in s:
+        receivers += ALARM_RECEIVERS
+    if receivers:
+        s = s.replace("</application>", receivers[4:] + "    </application>", 1)
+    if use_calendar:
+        s = add_permissions(s, [("READ_CALENDAR", "")])
+    write(MANIFEST, s)
+    print("manifest ok (widget=%s alarm=%s calendar=%s)" % (use_widget, use_alarm, use_calendar))
 
     files = glob.glob("android/app/src/main/java/**/MainActivity.java", recursive=True)
     if not files:
-        print("WARNING: MainActivity.java not found; widget will show default clocks only.")
+        print("WARNING: MainActivity.java not found; native plugins are not registered.")
         return
     path = files[0]
-    src = read(path)
-    if "WidgetBridgePlugin" in src:
-        print("MainActivity already patched")
-        return
-    m = re.search(r"^package\s+[\w.]+;", src, re.M)
+    m = re.search(r"^package\s+[\w.]+;", read(path), re.M)
     if not m:
         sys.exit("ERROR: no package line in " + path)
+    plugins = []
+    if use_widget:
+        plugins.append("com.tzcomparator.widget.WidgetBridgePlugin")
+    if use_alarm:
+        plugins.append("com.tzcomparator.alarm.AlarmSchedulerPlugin")
+    if use_calendar:
+        plugins.append("com.tzcomparator.calendar.CalendarBridgePlugin")
+    imports = "".join("import %s;\n" % p for p in plugins)
+    registers = "".join("        registerPlugin(%s.class);\n" % p.split(".")[-1] for p in plugins)
     write(
         path,
         m.group(0)
-        + """
-
-import android.os.Bundle;
-
-import com.getcapacitor.BridgeActivity;
-import com.tzcomparator.widget.WidgetBridgePlugin;
-
-public class MainActivity extends BridgeActivity {
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        registerPlugin(WidgetBridgePlugin.class);
-        super.onCreate(savedInstanceState);
-    }
-}
-""",
+        + "\n\nimport android.os.Bundle;\n\nimport com.getcapacitor.BridgeActivity;\n"
+        + imports
+        + "\npublic class MainActivity extends BridgeActivity {\n"
+        + "    @Override\n    public void onCreate(Bundle savedInstanceState) {\n"
+        + registers
+        + "        super.onCreate(savedInstanceState);\n    }\n}\n",
     )
-    print("MainActivity patched:", path)
+    print("MainActivity registers:", ", ".join(p.split(".")[-1] for p in plugins) or "(none)")
 
 
 if __name__ == "__main__":
-    {"perms": perms, "widget": widget}[sys.argv[1]]()
+    {"perms": perms, "native": native}[sys.argv[1]]()

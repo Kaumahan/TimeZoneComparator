@@ -32,9 +32,12 @@ jobs:
       - name: Notification icon and permissions
         run: bash scripts/android-setup.sh
 
-      - name: Home screen widget
-        if: ${{ vars.DISABLE_WIDGET != 'true' }}
-        run: bash scripts/android-widget.sh
+      - name: Native features (widget, alarms, calendar)
+        env:
+          DISABLE_WIDGET: ${{ vars.DISABLE_WIDGET }}
+          DISABLE_ALARM: ${{ vars.DISABLE_ALARM }}
+          DISABLE_CALENDAR: ${{ vars.DISABLE_CALENDAR }}
+        run: bash scripts/android-native.sh
 
       - name: Generate launcher icons
         run: npx capacitor-assets generate --android
@@ -101,6 +104,9 @@ jobs:
             -sigalg SHA256withRSA -digestalg SHA-256 "$AAB" "$SIGN_ALIAS"
           jarsigner -verify "$AAB" | head -3
           cp "$AAB" out/app-release.aab
+          SHA1=$(keytool -list -v -keystore release.jks -storepass "$SIGN_PW" | grep -m1 "SHA1:" | sed 's/.*SHA1: *//')
+          echo "SIGN_SHA1=$SHA1" >> $GITHUB_ENV
+          echo "Signed with key SHA-1: $SHA1"
           rm -f release.jks
 
       - uses: actions/upload-artifact@v4
@@ -120,6 +126,7 @@ jobs:
       - name: Summary
         run: |
           echo "### Build finished" >> $GITHUB_STEP_SUMMARY
+          echo "Signed with key SHA-1: \`$SIGN_SHA1\` (must match what Google Play expects)" >> $GITHUB_STEP_SUMMARY
           echo "Download **app-release-aab** below and upload it to Google Play Console." >> $GITHUB_STEP_SUMMARY
           if [ "$NEW_KEY" = "true" ]; then
             echo "" >> $GITHUB_STEP_SUMMARY

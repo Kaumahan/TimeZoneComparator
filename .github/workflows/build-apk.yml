@@ -28,9 +28,12 @@ jobs:
       - name: Notification icon and permissions
         run: bash scripts/android-setup.sh
 
-      - name: Home screen widget
-        if: ${{ vars.DISABLE_WIDGET != 'true' }}
-        run: bash scripts/android-widget.sh
+      - name: Native features (widget, alarms, calendar)
+        env:
+          DISABLE_WIDGET: ${{ vars.DISABLE_WIDGET }}
+          DISABLE_ALARM: ${{ vars.DISABLE_ALARM }}
+          DISABLE_CALENDAR: ${{ vars.DISABLE_CALENDAR }}
+        run: bash scripts/android-native.sh
 
       - name: Generate launcher icons
         run: npx capacitor-assets generate --android

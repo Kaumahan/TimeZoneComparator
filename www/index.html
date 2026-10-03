@@ -111,6 +111,10 @@ button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 .ringbox .ic{font-size:40px;color:var(--cy)}
 .ringbox button{width:100%}
 .acts{display:flex;gap:8px;align-items:center}
+.diag{border:1px solid rgba(39,39,42,.7);border-radius:12px;padding:10px 12px;background:rgba(24,24,27,.5)}
+.diag summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--z200);min-height:28px;display:flex;align-items:center}
+.drow{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:6px 0;border-bottom:1px solid rgba(39,39,42,.6)}
+.drow .ok{color:#34d399;font-weight:600;text-align:right}.drow .bad{color:#fb7185;font-weight:600;text-align:right}
 .wzon{background:rgba(6,182,212,.2)!important;border-color:var(--cy)!important;color:#67e8f9!important}
 .soundrow{display:flex;gap:8px}.soundrow select{flex:1;min-width:0}.soundrow .mini{flex:none;min-width:104px;justify-content:center}
 </style>
@@ -207,6 +211,7 @@ ${results.length?`<div class="res">${results.map(r=>`<button data-add="${esc(r.z
 </div>
 <div class="cards">${cardsHTML()}</div>
 ${widgetSectionHTML()}
+${calendarSectionHTML()}
 ${alarmsSectionHTML()}`;
 const $=s=>app.querySelector(s);
 $('#reset').onclick=resetAll;$('#live').onchange=e=>setLive(e.target.checked);
@@ -227,6 +232,8 @@ const isNative=()=>{try{return !!(window.Capacitor&&window.Capacitor.isNativePla
 function nativePlugin(name){if(!isNative())return null;const C=window.Capacitor;try{if(C.Plugins&&C.Plugins[name])return C.Plugins[name];if(C.registerPlugin)return C.registerPlugin(name)}catch{}return null}
 const LN=()=>nativePlugin('LocalNotifications');
 const CW=()=>nativePlugin('ClockWidget');
+const AS=()=>nativePlugin('AlarmScheduler');
+const CAL=()=>nativePlugin('CalendarBridge');
 const MAX_ALARMS=20,TEST_ID=2000000000;
 const SOUNDS=[{id:'classic',name:'Classic bell'},{id:'digital',name:'Digital beeps'},{id:'melody',name:'Melody'},{id:'siren',name:'Siren'},{id:'chime',name:'Chime'},{id:'pulse',name:'Pulse'}];
 const soundOf=id=>SOUNDS.some(x=>x.id===id)?id:'classic';
@@ -255,6 +262,53 @@ for(let i=0;i<70&&out.length<count;i++){const dt=new Date(Date.UTC(t.y,t.m-1,t.d
 const ev=zonedToUtc(dt.getUTCFullYear(),dt.getUTCMonth()+1,dt.getUTCDate(),hh,mm,a.zone);if(ev-lead>=fromMs)out.push({ev,fire:ev-lead})}
 return out}
 /*T-END*/
+/* --- alarm status panel --- */
+state.diag={};state.diagOpen=false;
+const fmtDT=ms=>new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(new Date(ms));
+function diagHTML(){const d=state.diag;if(!d.engine)return'<p class="hint">Tap “Check status”.</p>';
+const row=(k,v,bad)=>`<div class="drow"><span>${k}</span><b class="${bad?'bad':'ok'}">${v}</b></div>`;
+const nat=d.engine==='native alarm clock';
+return row('Alarm engine',nat?'Android alarm clock':'Notification plugin (fallback)',!nat)
++(d.notificationsEnabled===undefined?'':row('Notifications',d.notificationsEnabled?'Allowed':'BLOCKED',!d.notificationsEnabled))
++(d.pending===undefined?(d.lnPending===undefined?'':row('Scheduled alerts',String(d.lnPending),false)):row('Scheduled alerts',d.pending+(d.next?' · next '+fmtDT(d.next):''),d.pending===0&&state.alarms.some(a=>a.enabled)))
++(d.ignoringBattery===undefined?'':row('Battery',d.ignoringBattery?'Unrestricted':'Optimized (may delay alarms)',!d.ignoringBattery))
++(d.err?`<p class="hint">Last error: ${esc(d.err)}</p>`:'')}
+function diagBlockHTML(){return`<details id="diagDetails" class="diag" ${state.diagOpen?'open':''}><summary>Alarm status &amp; help</summary><div id="diagBody">${diagHTML()}</div>
+<div class="two" style="margin-top:8px"><button id="diagRefresh" class="mini" style="justify-content:center">Check status</button><button id="diagApp" class="mini" style="justify-content:center">App settings</button></div>
+<button id="diagBattery" class="mini" style="margin-top:8px;width:100%;justify-content:center">Battery settings (choose Unrestricted)</button></details>`}
+async function refreshDiag(){const as=AS(),ln=LN();const d={engine:as?'native alarm clock':(ln?'notification plugin':'')};
+if(as){try{Object.assign(d,await as.status())}catch(e){d.engine=ln?'notification plugin':'';d.err=String(e&&e.message||e)}}
+if(ln&&d.pending===undefined){try{const p=await ln.getPending();d.lnPending=(p.notifications||[]).length}catch{}}
+if(state.diag.err&&!d.err&&d.engine!=='native alarm clock')d.err=state.diag.err;
+state.diag=d;const el=document.getElementById('diagBody');if(el)el.innerHTML=diagHTML()}
+
+/* --- calendar (Android: reads the phone's calendars, including Google Calendar) --- */
+state.cal={status:'idle',events:[],msg:''};
+async function loadCalendar(){const cb=CAL();if(!cb)return;state.cal.status='loading';render();
+try{const r=await cb.listEvents({days:7});state.cal.events=r.events||[];state.cal.status='ok'}
+catch(e){const m=String(e&&e.message||e);state.cal.status=/denied/i.test(m)?'denied':'error';state.cal.msg=m}
+render()}
+function eventHTML(e,i){const fmt=(ms,o)=>new Intl.DateTimeFormat('en-US',o).format(new Date(ms));
+const when=e.allDay?fmt(e.begin,{timeZone:'UTC',weekday:'short',month:'short',day:'numeric'})+' · all day':fmt(e.begin,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+const times=e.allDay?'':state.clocks.slice(0,4).map(c=>`${esc(cityOf(c.zone))} ${fmt(e.begin,{timeZone:c.zone,hour:'numeric',minute:'2-digit'})}`).join(' · ');
+return`<div class="al"><div class="ainfo"><div class="at">${esc(e.title||'(No title)')}</div><div class="as mono">${when}</div>${times?`<div class="as">${times}</div>`:''}${e.calendar?`<div class="an">${esc(e.calendar)}</div>`:''}</div>
+${e.allDay?'':`<div class="aact"><button class="mini pri" data-evalarm="${i}">${ICONS.bell}<span>Alarm</span></button></div>`}</div>`}
+function calendarSectionHTML(){if(!isNative())return'';const c=state.cal;let body='';
+if(c.status==='loading')body='<p class="hint">Loading…</p>';
+else if(c.status==='denied')body='<div class="note warn"><span>Calendar permission was denied. Allow it in the app settings to see your meetings.</span><button id="calSettings" class="mini">Open settings</button></div>';
+else if(c.status==='error')body=`<p class="hint">Could not read the calendar: ${esc(c.msg)}</p>`;
+else if(c.status==='ok')body=c.events.length?`<div class="alist">${c.events.map(eventHTML).join('')}</div>`:'<p class="hint">No events in the next 7 days.</p>';
+else body='<p class="hint">Shows your next 7 days of meetings with each time in your clocks, and sets an alarm in one tap. It reads the calendars on your phone, including Google Calendar when your Google account is added to the phone. Nothing leaves your device.</p>';
+return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.calendar}Calendar</span><button id="calLoad" class="mini pri"><span>${c.status==='ok'?'Refresh':'Show my meetings'}</span></button></div>${body}</section>`}
+function evAlarm(i){const e=state.cal.events[i];if(!e)return;let z=e.timezone;
+try{new Intl.DateTimeFormat('en-US',{timeZone:z})}catch{z=null}
+if(!z||z==='UTC'&&!e.timezone)z=Intl.DateTimeFormat().resolvedOptions().timeZone;
+const o=zparts(e.begin,z),pad=n=>String(+n).padStart(2,'0');
+openAlarmForm(null,{label:(e.title||'Meeting').slice(0,40),zone:z,time:`${pad(+o.hour%24)}:${pad(o.minute)}`,repeat:'once',date:`${o.year}-${pad(o.month)}-${pad(o.day)}`,lead:15,sound:defSound})}
+async function addToCalendar(id){const a=state.alarms.find(x=>x.id===id),cb=CAL();if(!a||!cb)return;
+const nx=occurrences(a,1,Date.now())[0];if(!nx){alert('This alarm has no upcoming time.');return}
+try{await cb.insertEvent({title:a.label||'Meeting',begin:nx.ev,end:nx.ev+3600000,timezone:a.zone})}catch(e){alert('Could not open a calendar app on this phone.')}}
+
 /* --- home-screen widget (Android only) --- */
 state.wz=store.get('tzc_widget_zones',null);
 function widgetZones(){const have=state.clocks.map(c=>c.zone);let z=Array.isArray(state.wz)?state.wz.filter(x=>have.includes(x)):[];if(!z.length)z=have.slice(0,4);return z.slice(0,4)}
@@ -284,13 +338,20 @@ const lt=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).form
 return`${a.lead?`Starts in ${a.lead} min`:'Starting now'}: ${zt} in ${cityOf(a.zone)} (${lt} your time)`}
 
 /* --- native scheduling --- */
-async function syncNotifications(){const ln=LN();if(!ln)return;
+let syncChain=Promise.resolve();
+function syncNotifications(){syncChain=syncChain.then(doSync,doSync);return syncChain}
+async function doSync(){const ln=LN(),as=AS();if(!ln&&!as)return;
+const now=Date.now(),list=[];
+const act=state.alarms.filter(a=>a.enabled),per=Math.max(7,Math.min(60,Math.floor(250/Math.max(1,act.length))));
+act.forEach(a=>{occurrences(a,per,now+5000).forEach((o,k)=>list.push({id:a.n*100+k,fire:o.fire,title:a.label||'Meeting reminder',body:alarmBody(a,o),sound:soundOf(a.sound),alarm:a.id}))});
+if(as){try{await as.schedule({alarms:list.map(x=>({id:x.id,at:x.fire,title:x.title,body:x.body,sound:x.sound}))});
+state.diag.engine='native alarm clock';state.diag.err='';
+if(ln){try{const pend=await ln.getPending();const old=(pend.notifications||[]).filter(n=>n.id!==TEST_ID);if(old.length)await ln.cancel({notifications:old.map(n=>({id:n.id}))})}catch{}}
+return}catch(e){state.diag.err=String(e&&e.message||e)}}
+if(!ln)return;
 try{const pend=await ln.getPending();const mine=(pend.notifications||[]).filter(n=>n.id!==TEST_ID);
 if(mine.length)await ln.cancel({notifications:mine.map(n=>({id:n.id}))});
-const now=Date.now(),list=[];
-const act=state.alarms.filter(a=>a.enabled),per=Math.max(7,Math.min(60,Math.floor(400/Math.max(1,act.length))));
-act.forEach(a=>{occurrences(a,per,now+5000).forEach((o,k)=>list.push({id:a.n*100+k,title:a.label||'Meeting reminder',body:alarmBody(a,o),schedule:{at:new Date(o.fire),allowWhileIdle:true},channelId:chOf(a.sound),smallIcon:'ic_stat_alarm',extra:{alarm:a.id}}))});
-if(list.length)await ln.schedule({notifications:list})}catch(e){console.error(e)}}
+if(list.length)await ln.schedule({notifications:list.map(x=>({id:x.id,title:x.title,body:x.body,schedule:{at:new Date(x.fire),allowWhileIdle:true},channelId:chOf(x.sound),smallIcon:'ic_stat_alarm',extra:{alarm:x.alarm}}))})}catch(e){console.error(e)}}
 async function refreshNotifState(){const ln=LN();
 if(ln){try{const p=await ln.checkPermissions();state.notif.perm=p.display;try{const e=await ln.checkExactNotificationSetting();state.notif.exact=e.exact_alarm}catch{}}catch(e){console.error(e)}}
 else if('Notification' in window){state.notif.perm=Notification.permission==='default'?'prompt':Notification.permission}
@@ -332,37 +393,47 @@ const nt=nx?'Next alert: '+new Intl.DateTimeFormat('en-US',{weekday:'short',mont
 return`<div class="al ${a.enabled&&nx?'':'aoff'}"><div class="ainfo"><div class="at">${esc(a.label||'Meeting')}</div>
 <div class="as mono">${fmt12(a.time)} · ${esc(zoneLabel(a.zone))}</div><div class="as">${repeatText(a)} · ${leadText(a.lead)} · ♪ ${esc(soundName(a.sound))}</div><div class="an">${nt}</div></div>
 <div class="aact"><label class="sw" aria-label="Alarm on or off"><input type="checkbox" data-atoggle="${a.id}" ${a.enabled?'checked':''}><span class="tr"></span><span class="th"></span></label>
-<button class="ib" data-aedit="${a.id}" aria-label="Edit alarm">${ICONS.edit}</button><button class="ib" data-adel="${a.id}" aria-label="Delete alarm">${ICONS.trash}</button></div></div>`}).join('')}
+${isNative()&&nx?`<button class="ib" data-acal="${a.id}" aria-label="Add to calendar">${ICONS.calendar}</button>`:''}<button class="ib" data-aedit="${a.id}" aria-label="Edit alarm">${ICONS.edit}</button><button class="ib" data-adel="${a.id}" aria-label="Delete alarm">${ICONS.trash}</button></div></div>`}).join('')}
 function alarmsSectionHTML(){const n=state.notif;let b='';
 if(n.perm==='prompt'||n.perm==='prompt-with-rationale')b='<div class="note"><span>Turn on notifications to receive alarms.</span><button id="enableNotif" class="mini">Enable</button></div>';
 else if(n.perm==='denied')b='<div class="note warn"><span>Notifications are blocked. Allow them for this app in your device settings.</span></div>';
 else if(n.perm==='unsupported')b='<div class="note warn"><span>This browser does not support notifications. Alarms will ring on screen only.</span></div>';
 else if(n.native&&n.exact==='denied')b='<div class="note warn"><span>For on-time alarms, allow Alarms &amp; reminders for this app.</span><button id="allowExact" class="mini">Open settings</button></div>';
 return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.bell}Alarms &amp; reminders</span><button id="addAlarm" class="mini pri">${ICONS.plus}<span>Add</span></button></div>${b}<div class="alist">${alarmListHTML()}</div>
-<button id="testAlert" class="linkbtn">Send a test alert in 5 seconds</button>${n.native?'<p class="hint">Alarms ring even when the app is closed, on your phone’s <b>Alarm volume</b> (turn it up in Settings → Sound). If they come late or not at all, set this app’s battery usage to Unrestricted and allow auto-start (Xiaomi, Oppo, Vivo, Samsung and Huawei phones are strict). Open the app every few weeks to refresh upcoming alarms.</p>':'<p class="hint">In a browser, alerts only sound while this page is open. The Android app can alert you in the background.</p>'}</section>`}
+${n.native?diagBlockHTML():''}<button id="testAlert" class="linkbtn">Send a test alert in 5 seconds</button>${n.native?'<p class="hint">Alarms ring even when the app is closed, on your phone’s <b>Alarm volume</b> (turn it up in Settings → Sound). If they come late or not at all, set this app’s battery usage to Unrestricted and allow auto-start (Xiaomi, Oppo, Vivo, Samsung and Huawei phones are strict). Open the app every few weeks to refresh upcoming alarms.</p>':'<p class="hint">In a browser, alerts only sound while this page is open. The Android app can alert you in the background.</p>'}</section>`}
 function bindAlarmList(){
 app.querySelectorAll('[data-atoggle]').forEach(i=>i.onchange=async()=>{const a=state.alarms.find(x=>x.id===i.dataset.atoggle);if(a){a.enabled=i.checked;saveAlarms();await syncNotifications();updateAlarmList()}});
 app.querySelectorAll('[data-aedit]').forEach(b=>b.onclick=()=>openAlarmForm(b.dataset.aedit));
+app.querySelectorAll('[data-acal]').forEach(b=>b.onclick=()=>addToCalendar(b.dataset.acal));
 app.querySelectorAll('[data-adel]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this alarm?'))return;state.alarms=state.alarms.filter(x=>x.id!==b.dataset.adel);saveAlarms();await syncNotifications();updateAlarmList()})}
 function updateAlarmList(){const l=app.querySelector('.alist');if(l){l.innerHTML=alarmListHTML();bindAlarmList()}}
 function bindAlarms(){const $=s=>app.querySelector(s);
 const a=$('#addAlarm');if(a)a.onclick=()=>openAlarmForm();
 const pw=$('#pinWidget');if(pw)pw.onclick=pinWidget;
+const cl=$('#calLoad');if(cl)cl.onclick=loadCalendar;
+const cs=$('#calSettings');if(cs)cs.onclick=()=>{const as=AS();if(as)as.openAppSettings().catch(()=>{})};
+app.querySelectorAll('[data-evalarm]').forEach(b=>b.onclick=()=>evAlarm(+b.dataset.evalarm));
+const dt=$('#diagDetails');if(dt)dt.ontoggle=()=>{state.diagOpen=dt.open;if(dt.open)refreshDiag()};
+const dr=$('#diagRefresh');if(dr)dr.onclick=refreshDiag;
+const da=$('#diagApp');if(da)da.onclick=()=>{const as=AS();if(as)as.openAppSettings().catch(()=>{})};
+const db=$('#diagBattery');if(db)db.onclick=()=>{const as=AS();if(as)as.openBatterySettings().catch(()=>{})};
 const e=$('#enableNotif');if(e)e.onclick=enableNotifications;
 const x=$('#allowExact');if(x)x.onclick=allowExact;
 const t=$('#testAlert');if(t)t.onclick=testAlert;
 bindAlarmList()}
-async function testAlert(){const ln=LN();
-if(ln){if(state.notif.perm!=='granted'){await enableNotifications();if(state.notif.perm!=='granted')return}
-try{await ln.schedule({notifications:[{id:TEST_ID,title:'Test alert',body:'Notifications are working.',schedule:{at:new Date(Date.now()+5000),allowWhileIdle:true},channelId:chOf(defSound),smallIcon:'ic_stat_alarm'}]})}catch(e){console.error(e)}}
-else{if(state.notif.perm==='prompt')await enableNotifications();setTimeout(()=>ring('Test alert','Alerts are working while this page is open.',defSound),5000)}
-const b=document.getElementById('testAlert');if(b){b.textContent='Test alert scheduled…';setTimeout(()=>{const y=document.getElementById('testAlert');if(y)y.textContent='Send a test alert in 5 seconds'},5500)}}
-function openAlarmForm(id){
+async function testAlert(){const ln=LN(),as=AS();
+if(ln&&state.notif.perm!=='granted'){await enableNotifications();if(state.notif.perm!=='granted')return}
+let done=false;
+if(as){try{await as.fireIn({seconds:5,title:'Test alert',body:'Alarms are working.',sound:defSound});done=true}catch(e){state.diag.err=String(e&&e.message||e)}}
+if(!done&&ln){try{await ln.schedule({notifications:[{id:TEST_ID,title:'Test alert',body:'Notifications are working.',schedule:{at:new Date(Date.now()+5000),allowWhileIdle:true},channelId:chOf(defSound),smallIcon:'ic_stat_alarm'}]});done=true}catch(e){console.error(e)}}
+if(!done&&!ln&&!as){if(state.notif.perm==='prompt')await enableNotifications();setTimeout(()=>ring('Test alert','Alerts are working while this page is open.',defSound),5000)}
+const b=document.getElementById('testAlert');if(b){b.textContent='Test alert scheduled… lock your phone and wait 5 seconds';setTimeout(()=>{const y=document.getElementById('testAlert');if(y)y.textContent='Send a test alert in 5 seconds'},6000)}}
+function openAlarmForm(id,pre){
 const ex=id?state.alarms.find(a=>a.id===id):null;
 if(!ex&&state.alarms.length>=MAX_ALARMS){alert('You can have up to '+MAX_ALARMS+' alarms.');return}
-const zones=[...new Set([...state.clocks.map(c=>c.zone),...allZones()])];
+const zones=[...new Set([...(pre&&pre.zone?[pre.zone]:[]),...state.clocks.map(c=>c.zone),...allZones()])];
 const dz=ex?ex.zone:(state.clocks.find(c=>c.zone!==HOME_ZONE)||state.clocks[0]).zone;
-const a=ex||{label:'',zone:dz,time:'09:00',repeat:'once',date:ymdStr(zoneYMD(Date.now(),dz)),lead:15};
+const a=ex||pre||{label:'',zone:dz,time:'09:00',repeat:'once',date:ymdStr(zoneYMD(Date.now(),dz)),lead:15};
 sheet(`<div class="ov" id="ov"><div class="sheet" role="dialog" aria-label="${ex?'Edit alarm':'New alarm'}"><h2>${ex?'Edit alarm':'New alarm'}</h2>
 <label class="fld"><span>Label</span><input id="af-label" type="text" maxlength="40" placeholder="e.g. Client call" value="${esc(a.label)}"></label>
 <label class="fld"><span>Time zone of the meeting</span><select id="af-zone">${zones.map(z=>`<option value="${esc(z)}" ${z===a.zone?'selected':''}>${esc(zoneLabel(z))}</option>`).join('')}</select></label>
@@ -393,7 +464,7 @@ setInterval(updateAlarmList,30000);
 
 setInterval(()=>{if(state.isLive){state.selectedDate=new Date();updateTimes()}},1000);
 render();
-initNotifications();
+initNotifications().then(()=>refreshDiag());
 </script>
 </body>
 </html>

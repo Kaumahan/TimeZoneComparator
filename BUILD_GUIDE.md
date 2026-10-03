@@ -49,7 +49,7 @@ Requires Node 20+, Android Studio, JDK 21.
 npm install
 npx cap add android
 npm run setup-android   # notification icon + alarm permissions
-npm run setup-widget    # home screen clock widget (optional)
+npm run setup-native    # widget + alarm engine + calendar bridge
 npm run assets          # generates launcher icons + splash from /resources
 npx cap sync android
 npx cap open android
@@ -61,45 +61,54 @@ After editing `www/index.html`, run `npx cap sync android` and rebuild.
 
 ---
 
-## Home screen widget (new)
+## Native features (widget, alarm engine, Google Calendar)
 
-The app includes an Android widget that shows up to 4 live clocks (city, day, time).
+`scripts/android-native.sh` (run by both GitHub workflows, or `npm run setup-native` locally) copies the Java code
+from `android-extras/` into the generated Android project and registers it in the manifest and `MainActivity`.
+Nothing here uses the network: everything runs on the phone.
 
-* In the app tap **Add widget** (Android 8+ shows a confirmation), or press and hold an empty spot on the home
-  screen → Widgets → **Time Zone Clocks**. It can be resized, and tapping it opens the app.
-* Choose which clocks appear with the **Widget** button on each clock. The list syncs whenever you open the app or
-  change it. The times tick by themselves, with no background work.
-* How it is built: `android-extras/widget/` (Java + layout) is copied in by `scripts/android-widget.sh`, which also
-  registers the receiver in the manifest and a small plugin in `MainActivity`.
-* **If the build ever fails with Java or resource errors from the widget:** in GitHub go to Settings → Secrets and
-  variables → Actions → Variables → New repository variable, name `DISABLE_WIDGET`, value `true`, and run the build
-  again. The app builds without the widget. Send me the error text and I'll fix it.
+If a build ever fails with Java or resource errors from one of these, switch that feature off without touching code:
+in GitHub go to Settings → Secrets and variables → Actions → **Variables** → New repository variable, then add
+`DISABLE_WIDGET`, `DISABLE_ALARM` or `DISABLE_CALENDAR` with the value `true`, and run the build again.
+(Without the alarm engine the app falls back to ordinary scheduled notifications.) Send me the error text.
 
-## Alarms & notifications
+### Alarms
 
-The app can schedule meeting alarms in any time zone. In the Android app they are scheduled with the
-phone's alarm system, so they fire even when the app is closed (and are re-scheduled after a reboot).
-They are also refreshed every time you open the app, so open it at least every couple of weeks.
-
+* **Engine:** alarms are scheduled with Android's alarm-clock API (`AlarmManager.setAlarmClock`, the same one the
+  Clock app uses). They fire on time even in Doze mode and need no "exact alarm" permission. When one fires the app
+  shows a loud alarm notification on the phone's **Alarm volume**, repeating until you dismiss it (or 2 minutes).
+* **Survives restarts and updates:** the schedule is saved on the phone and re-created after a reboot **and after the
+  app is updated** (Android clears alarms on update). It is also refreshed whenever you open the app.
+* **Sounds:** six 24-second tones in `www/sounds/tone_*.wav`: Classic bell, Digital beeps, Melody, Siren, Chime, Pulse.
+  Pick one per alarm (with a Preview button).
+* **Up to about 300 upcoming alerts** are scheduled in total (a Mon–Fri alarm covers roughly 10 weeks ahead).
+* **Alarm status panel** (Alarms section → "Alarm status & help"): shows which engine is active, whether notifications are
+  allowed, how many alerts are scheduled and the next one, and whether battery optimisation could delay alarms.
+  It has shortcuts to the app settings and battery settings. Use it first if an alarm does not ring.
+* **If alarms are late or silent:** (1) raise the Alarm volume in Settings → Sound; (2) allow notifications for the
+  app; (3) set the app's battery usage to **Unrestricted** and allow auto-start (Xiaomi, Oppo, Vivo, Samsung and Huawei
+  are strict); (4) Do Not Disturb can silence alarms.
 * Permissions added by `scripts/android-setup.sh`: `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`, `VIBRATE`,
-  `WAKE_LOCK`, `SCHEDULE_EXACT_ALARM` (Android 12 only) and `USE_EXACT_ALARM` (granted automatically on Android 13+).
-* Alerts use one of six loud 24-second alarm tones (`www/sounds/tone_*.wav`): Classic bell, Digital beeps, Melody,
-  Siren, Chime, Pulse. Pick one per alarm in the app (with a Preview button). Each tone is its own notification
-  channel, so you can also swap any of them for a phone ringtone in Android Settings → Apps → this app → Notifications.
-* Alerts are played on the phone's **Alarm volume** (not the notification volume). Turn it up in Settings → Sound.
-  If your phone plays them quietly, tell me the phone model.
-* Up to about 400 upcoming alerts are scheduled in total (for one weekday alarm that is roughly 10 weeks ahead),
-  and the list is refreshed every time the app opens.
-* On Android 12+ the user may need to allow "Alarms & reminders" for the app so alerts arrive on the exact minute.
-  The app shows a banner with a shortcut to that setting if it is not allowed.
-* Alerts are high-priority notifications with sound and vibration. They do not take over the screen like the
-  built-in Clock app, and they follow the phone's silent / Do Not Disturb settings.
+  `WAKE_LOCK`, and `SCHEDULE_EXACT_ALARM` (Android 12 only, used by the fallback path).
 * In the website / PWABuilder version, alerts only ring while the page is open.
 
-**Play Console:** exact-alarm permissions are restricted. `USE_EXACT_ALARM` is meant for alarm-clock and calendar
-apps; if Google objects, delete the `add_perm USE_EXACT_ALARM` line in `scripts/android-setup.sh` and rebuild
-(users will then be asked to allow "Alarms & reminders" once). In App content you may be asked to declare why the
-app uses them. Answer honestly: it schedules user-created meeting reminders / alarms.
+### Google Calendar
+
+* **Show my meetings** lists the next 7 days of events from the calendars on the phone. Google Calendar events
+  appear when your Google account is added to the phone and calendar sync is on. Each event shows its time in your
+  clocks, and **Alarm** opens a pre-filled alarm for it. All-day events are shown but cannot have an alarm.
+* The calendar icon on an alarm opens your calendar app (normally Google Calendar) with a new event filled in.
+  It needs no permission.
+* Uses the `READ_CALENDAR` permission, asked only when you tap **Show my meetings**. Events are read on the phone and
+  never sent anywhere.
+* **Play Console:** in the Data safety form, calendar data is read on the device only and is not collected or shared.
+  Keep the privacy policy's calendar section.
+
+### Home screen widget
+
+* Shows up to 4 live clocks (city, day, time). In the app tap **Add widget**, or press and hold an empty spot on the
+  home screen → Widgets → **Time Zone Clocks**. It can be resized, and tapping it opens the app.
+* Choose which clocks appear with the **Widget** button on each clock. The times tick by themselves.
 
 ## Google Play Console checklist
 
