@@ -27,6 +27,25 @@ public final class AlarmEngine {
     static final String PREFS = "tzc_alarm_engine";
     static final String KEY = "alarms";
     static final int MAX_ALARMS = 300;
+    static final String ACTION_SNOOZE = "com.tzcomparator.ALARM_SNOOZE";
+    static final String ACTION_DISMISS = "com.tzcomparator.ALARM_DISMISS";
+    static final long SNOOZE_MS = 5L * 60L * 1000L;
+
+    /** Id used for the one-off alarm created by "Snooze". Stays clear of the ids the web app generates. */
+    static int snoozeId(int id) {
+        return 1000000000 + (id & 0xFFFFF);
+    }
+
+    static PendingIntent actionPending(Context ctx, int id, String action, String title, String body, String sound) {
+        Intent intent = new Intent(ctx, AlarmActionReceiver.class);
+        intent.setAction(action);
+        intent.putExtra("id", id);
+        intent.putExtra("title", title);
+        intent.putExtra("body", body);
+        intent.putExtra("sound", sound);
+        return PendingIntent.getBroadcast(
+                ctx, id, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
 
     private AlarmEngine() {
     }
@@ -224,6 +243,8 @@ public final class AlarmEngine {
         if (content != null) {
             builder.setContentIntent(content);
         }
+        builder.addAction(small, "Snooze 5 min", actionPending(ctx, id, ACTION_SNOOZE, title, body, snd));
+        builder.addAction(small, "Dismiss", actionPending(ctx, id, ACTION_DISMISS, title, body, snd));
         if (Build.VERSION.SDK_INT >= 26) {
             builder.setTimeoutAfter(120000);
         } else {

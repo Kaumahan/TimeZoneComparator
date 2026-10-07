@@ -5,62 +5,132 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="14dp">
 
-    <TextView
-        android:id="@+id/widget_title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="WORLD CLOCKS"
-        android:textColor="#22D3EE"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:letterSpacing="0.12"
+            android:text="WORLD CLOCKS"
+            android:textColor="#22D3EE"
+            android:textSize="10sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/hdr_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="EEE, MMM d"
+            android:format24Hour="EEE, MMM d"
+            android:textColor="#71717A"
+            android:textSize="10sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:id="@+id/row0"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/ico0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="6dp"
+                android:text="&#9728;"
+                android:textColor="#FBBF24"
+                android:textSize="15sp" />
 
             <TextView
                 android:id="@+id/name0"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Manila"
+                android:text="City"
                 android:textColor="#F4F4F5"
-                android:textSize="13sp"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/dot0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="&#9679;"
+                android:textColor="#34D399"
+                android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/st0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="Working"
+                android:textColor="#34D399"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextClock
+                android:id="@+id/time0"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="h:mm"
+                android:format24Hour="h:mm"
+                android:includeFontPadding="false"
+                android:textColor="#FFFFFF"
+                android:textSize="38sp"
                 android:textStyle="bold" />
 
             <TextClock
-                android:id="@+id/day0"
+                android:id="@+id/ap0"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:format12Hour="EEE, MMM d"
-                android:format24Hour="EEE, MMM d"
+                android:layout_marginStart="6dp"
+                android:format12Hour="a"
+                android:format24Hour="a"
                 android:textColor="#A1A1AA"
-                android:textSize="10sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextClock
-            android:id="@+id/time0"
+            android:id="@+id/day0"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="h:mm a"
-            android:format24Hour="h:mm a"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:format12Hour="EEE, MMM d"
+            android:format24Hour="EEE, MMM d"
+            android:textColor="#A1A1AA"
+            android:textSize="11sp" />
     </LinearLayout>
+
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="6dp"
+        android:layout_marginTop="8dp"
+        android:background="#3F3F46" />
 
     <LinearLayout
         android:id="@+id/row1"
@@ -69,6 +139,15 @@
         android:layout_weight="1"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/ico1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="&#9728;"
+            android:textColor="#FBBF24"
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -82,29 +161,67 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="New York"
+                android:text="City"
                 android:textColor="#F4F4F5"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <TextClock
-                android:id="@+id/day1"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:format12Hour="EEE, MMM d"
-                android:format24Hour="EEE, MMM d"
-                android:textColor="#A1A1AA"
-                android:textSize="10sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/dot1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#9679;"
+                    android:textColor="#34D399"
+                    android:textSize="8sp" />
+
+                <TextView
+                    android:id="@+id/st1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:text="Working"
+                    android:textColor="#34D399"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextClock
+                    android:id="@+id/day1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:format12Hour="EEE, MMM d"
+                    android:format24Hour="EEE, MMM d"
+                    android:textColor="#71717A"
+                    android:textSize="10sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextClock
             android:id="@+id/time1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="h:mm a"
-            android:format24Hour="h:mm a"
+            android:format12Hour="h:mm"
+            android:format24Hour="h:mm"
+            android:includeFontPadding="false"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/ap1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:format12Hour="a"
+            android:format24Hour="a"
+            android:textColor="#A1A1AA"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -115,6 +232,15 @@
         android:layout_weight="1"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/ico2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="&#9728;"
+            android:textColor="#FBBF24"
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -128,29 +254,67 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="London"
+                android:text="City"
                 android:textColor="#F4F4F5"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <TextClock
-                android:id="@+id/day2"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:format12Hour="EEE, MMM d"
-                android:format24Hour="EEE, MMM d"
-                android:textColor="#A1A1AA"
-                android:textSize="10sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/dot2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#9679;"
+                    android:textColor="#34D399"
+                    android:textSize="8sp" />
+
+                <TextView
+                    android:id="@+id/st2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:text="Working"
+                    android:textColor="#34D399"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextClock
+                    android:id="@+id/day2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:format12Hour="EEE, MMM d"
+                    android:format24Hour="EEE, MMM d"
+                    android:textColor="#71717A"
+                    android:textSize="10sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextClock
             android:id="@+id/time2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="h:mm a"
-            android:format24Hour="h:mm a"
+            android:format12Hour="h:mm"
+            android:format24Hour="h:mm"
+            android:includeFontPadding="false"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/ap2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:format12Hour="a"
+            android:format24Hour="a"
+            android:textColor="#A1A1AA"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -161,6 +325,15 @@
         android:layout_weight="1"
         android:gravity="center_vertical"
         android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/ico3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="&#9728;"
+            android:textColor="#FBBF24"
+            android:textSize="14sp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -174,29 +347,67 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Tokyo"
+                android:text="City"
                 android:textColor="#F4F4F5"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <TextClock
-                android:id="@+id/day3"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:format12Hour="EEE, MMM d"
-                android:format24Hour="EEE, MMM d"
-                android:textColor="#A1A1AA"
-                android:textSize="10sp" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/dot3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="&#9679;"
+                    android:textColor="#34D399"
+                    android:textSize="8sp" />
+
+                <TextView
+                    android:id="@+id/st3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="3dp"
+                    android:text="Working"
+                    android:textColor="#34D399"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextClock
+                    android:id="@+id/day3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:format12Hour="EEE, MMM d"
+                    android:format24Hour="EEE, MMM d"
+                    android:textColor="#71717A"
+                    android:textSize="10sp" />
+            </LinearLayout>
         </LinearLayout>
 
         <TextClock
             android:id="@+id/time3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="h:mm a"
-            android:format24Hour="h:mm a"
+            android:format12Hour="h:mm"
+            android:format24Hour="h:mm"
+            android:includeFontPadding="false"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextClock
+            android:id="@+id/ap3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="3dp"
+            android:format12Hour="a"
+            android:format24Hour="a"
+            android:textColor="#A1A1AA"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>

@@ -23,10 +23,12 @@ public class WidgetBridgePlugin extends Plugin {
             call.reject("clocks is required");
             return;
         }
+        Boolean h24 = call.getBoolean("h24", Boolean.FALSE);
         getContext()
                 .getSharedPreferences(ClockWidgetProvider.PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putString(ClockWidgetProvider.KEY, clocks.toString())
+                .putBoolean(ClockWidgetProvider.KEY_H24, h24.booleanValue())
                 .apply();
         ClockWidgetProvider.refreshAll(getContext());
         call.resolve();

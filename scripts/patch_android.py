@@ -71,6 +71,9 @@ ALARM_RECEIVERS = """        <receiver
             android:name="com.tzcomparator.alarm.AlarmReceiver"
             android:exported="false" />
         <receiver
+            android:name="com.tzcomparator.alarm.AlarmActionReceiver"
+            android:exported="false" />
+        <receiver
             android:name="com.tzcomparator.alarm.BootReceiver"
             android:exported="true">
             <intent-filter>

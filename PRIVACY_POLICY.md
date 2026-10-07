@@ -1,6 +1,6 @@
 # Privacy Policy for Time Zone Comparator
 
-**Effective date:** October 3, 2026
+**Effective date:** October 6, 2026
 **Developer:** [YOUR NAME OR COMPANY NAME]
 **Contact:** [YOUR EMAIL ADDRESS]
 
@@ -17,7 +17,7 @@ To work properly, the app saves the following on your device only:
 - The list of clocks (countries and time zones) you add
 - Your chosen day and time on the time scrubber, and the live-sync setting
 - Alarms you create: label, time zone, time, date, repeat setting, reminder lead time, and chosen alarm sound
-- Which clocks you selected for the home screen widget
+- Which clocks you selected for the home screen widget, your work hours and work days, and your 12/24-hour preference
 - Your alarm schedule (alarm times, titles and sounds), kept so that alarms can be restored after your device restarts or the app updates. If you create an alarm from a calendar event, the event title is saved as the alarm label on your device only
 - Your last chosen alarm sound
 
@@ -36,30 +36,34 @@ The app does not request access to your location, contacts, camera, microphone, 
 
 When you choose "add to calendar" for an alarm, the app opens your calendar app with a new event filled in. You decide whether to save it. The app does not read it back or send it anywhere.
 
-## 4. Home screen widget
+## 4. Meeting finder and sharing
+
+The meeting finder runs entirely on your device. When you tap Share, the app hands the text to your phone's share sheet or copies it; we do not receive it. When you tap Calendar, your calendar app opens with a new event filled in.
+
+## 5. Home screen widget
 
 The optional widget displays the clocks you selected, using your device's own clock. The clock list is kept on your device and is not shared.
 
-## 5. Third parties
+## 6. Third parties
 
 The app contains no third-party advertising, analytics, or tracking tools, and we do not share information with third parties. Google Play, which distributes the app, may process information about app installs under its own privacy policy.
 
-## 6. Children's privacy
+## 7. Children's privacy
 
 The app is not directed to children under 13, and we do not knowingly collect information from anyone, including children.
 
-## 7. Data retention and deletion
+## 8. Data retention and deletion
 
 Because we do not collect your data, we hold nothing about you. Data stored in the app on your device is kept until you delete it using the steps in section 2.
 
-## 8. Security
+## 9. Security
 
 Your data stays in the app's private storage on your device and is protected by your device's own security. Because we do not collect or transmit your data, there is nothing for us to secure on a server.
 
-## 9. Changes to this policy
+## 10. Changes to this policy
 
 If this policy changes, we will post the updated version at this same address and update the effective date above. Continued use of the app after a change means you accept the updated policy.
 
-## 10. Contact us
+## 11. Contact us
 
 If you have questions about this Privacy Policy, contact: **[YOUR EMAIL ADDRESS]**

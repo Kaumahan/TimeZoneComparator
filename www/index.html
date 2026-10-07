@@ -110,6 +110,27 @@ button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 .ringbox{width:100%;max-width:360px;background:var(--z900);border:1px solid var(--cy5);border-radius:20px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;box-shadow:0 0 40px rgba(6,182,212,.25)}
 .ringbox .ic{font-size:40px;color:var(--cy)}
 .ringbox button{width:100%}
+.mfbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:14px;border:1px solid var(--cy);background:rgba(6,182,212,.14);color:#67e8f9;font-weight:700;font-size:14px}
+.mfbtn:active{background:rgba(6,182,212,.25)}
+.dst{font-size:11px;color:#fbbf24;margin-top:4px}
+button.badge{cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 12px;border-radius:999px;border:1px solid rgba(63,63,70,.6);background:rgba(39,39,42,.5);color:var(--z400);font-size:13px;font-weight:600}
+.chip.sel{background:rgba(6,182,212,.2);border-color:var(--cy);color:#67e8f9}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--z200)}
+.chk input{width:18px;height:18px;accent-color:var(--cy)}
+.mfgrid{display:flex;flex-direction:column;gap:10px}
+.mfrow{display:flex;flex-direction:column;gap:4px}
+.mfl{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px}
+.mfl b{color:var(--z100)}.mfl span{color:var(--z500);font-size:11px}
+.bar{display:grid;grid-template-columns:repeat(48,1fr);gap:1px}
+.bar i{display:block;height:16px;border-radius:2px}
+.cw{background:#34d399}.ca{background:#a16207}.cs{background:#27272a}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--z400)}
+.legend span{display:flex;align-items:center}.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px}
+.acts2{display:flex;flex-direction:column;gap:6px;flex:none}
+.mfw{align-items:flex-start}
+.mfw .as b{color:var(--z200)}
 .acts{display:flex;gap:8px;align-items:center}
 .diag{border:1px solid rgba(39,39,42,.7);border-radius:12px;padding:10px 12px;background:rgba(24,24,27,.5)}
 .diag summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--z200);min-height:28px;display:flex;align-items:center}
@@ -125,15 +146,35 @@ button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 <script>
 const COUNTRY_DATA=[
 {country:'Philippines',zones:['Asia/Manila']},
-{country:'United States',zones:['America/New_York','America/Chicago','America/Denver','America/Los_Angeles']},
+{country:'United States',zones:['America/New_York','America/Chicago','America/Denver','America/Phoenix','America/Los_Angeles','America/Anchorage','Pacific/Honolulu']},
 {country:'Japan',zones:['Asia/Tokyo']},
 {country:'United Kingdom',zones:['Europe/London']},
-{country:'Australia',zones:['Australia/Sydney','Australia/Perth']},
+{country:'Australia',zones:['Australia/Sydney','Australia/Melbourne','Australia/Brisbane','Australia/Adelaide','Australia/Perth']},
 {country:'Germany',zones:['Europe/Berlin']},
 {country:'Singapore',zones:['Asia/Singapore']},
 {country:'India',zones:['Asia/Kolkata']},
 {country:'United Arab Emirates',zones:['Asia/Dubai']},
-{country:'Canada',zones:['America/Toronto','America/Vancouver']}];
+{country:'Canada',zones:['America/Toronto','America/Vancouver','America/Edmonton','America/Winnipeg','America/Halifax']},
+{country:'Mexico',zones:['America/Mexico_City']},{country:'Brazil',zones:['America/Sao_Paulo']},
+{country:'Argentina',zones:['America/Argentina/Buenos_Aires']},{country:'Chile',zones:['America/Santiago']},
+{country:'Colombia',zones:['America/Bogota']},{country:'Peru',zones:['America/Lima']},
+{country:'Ireland',zones:['Europe/Dublin']},{country:'France',zones:['Europe/Paris']},
+{country:'Spain',zones:['Europe/Madrid']},{country:'Italy',zones:['Europe/Rome']},
+{country:'Netherlands',zones:['Europe/Amsterdam']},{country:'Switzerland',zones:['Europe/Zurich']},
+{country:'Sweden',zones:['Europe/Stockholm']},{country:'Poland',zones:['Europe/Warsaw']},
+{country:'Portugal',zones:['Europe/Lisbon']},{country:'Greece',zones:['Europe/Athens']},
+{country:'Turkey',zones:['Europe/Istanbul']},{country:'Russia',zones:['Europe/Moscow']},
+{country:'Ukraine',zones:['Europe/Kiev']},{country:'Egypt',zones:['Africa/Cairo']},
+{country:'South Africa',zones:['Africa/Johannesburg']},{country:'Nigeria',zones:['Africa/Lagos']},
+{country:'Kenya',zones:['Africa/Nairobi']},{country:'Morocco',zones:['Africa/Casablanca']},
+{country:'Saudi Arabia',zones:['Asia/Riyadh']},{country:'Israel',zones:['Asia/Jerusalem']},
+{country:'Pakistan',zones:['Asia/Karachi']},{country:'Bangladesh',zones:['Asia/Dhaka']},
+{country:'Thailand',zones:['Asia/Bangkok']},{country:'Vietnam',zones:['Asia/Ho_Chi_Minh']},
+{country:'Indonesia',zones:['Asia/Jakarta']},{country:'Malaysia',zones:['Asia/Kuala_Lumpur']},
+{country:'Hong Kong',zones:['Asia/Hong_Kong']},{country:'China',zones:['Asia/Shanghai']},
+{country:'Taiwan',zones:['Asia/Taipei']},{country:'South Korea',zones:['Asia/Seoul']},
+{country:'New Zealand',zones:['Pacific/Auckland']}];
+
 const WEEKDAYS=[{label:'Mon',value:1},{label:'Tue',value:2},{label:'Wed',value:3},{label:'Thu',value:4},{label:'Fri',value:5},{label:'Sat',value:6},{label:'Sun',value:0}];
 const DEFAULT_CLOCKS=[{country:'Philippines',zone:'Asia/Manila'},{country:'United States',zone:'America/New_York'},{country:'United Kingdom',zone:'Europe/London'}];
 const HOME_ZONE='Asia/Manila';
@@ -157,29 +198,39 @@ const state={clocks:store.get('tzc_clocks',DEFAULT_CLOCKS),isLive:store.get('tzc
 selectedDate:(()=>{const s=store.get('tzc_date',null);const d=s?new Date(s):null;return d&&!isNaN(d)?d:hourStart()})(),search:''};
 if(!Array.isArray(state.clocks)||!state.clocks.length)state.clocks=DEFAULT_CLOCKS;
 if(state.isLive)state.selectedDate=new Date();
+const DEFAULT_WORK={s:9,e:18,d:[1,2,3,4,5]};
+function cleanWork(w){if(!w||typeof w!=='object')return null;const s=+w.s,e=+w.e;if(!(Number.isInteger(s)&&Number.isInteger(e)&&s>=0&&s<=23&&e>=1&&e<=24&&e>s))return null;
+const d=Array.isArray(w.d)?[...new Set(w.d.map(Number).filter(x=>Number.isInteger(x)&&x>=0&&x<=6))]:[];return{s,e,d}}
+state.h24=store.get('tzc_h24',false)===true;
+state.work=cleanWork(store.get('tzc_work',null))||DEFAULT_WORK;
+state.clocks=state.clocks.map(c=>{if(!c.work)return c;const w=cleanWork(c.work),n={...c};if(w)n.work=w;else delete n.work;return n});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const formatTime=(date,timeZone)=>new Intl.DateTimeFormat('en-US',{timeZone,hour:'2-digit',minute:'2-digit',hour12:true,weekday:'short',month:'short',day:'numeric'}).format(date);
-function getWorkStatus(date,timeZone){
-const parts=new Intl.DateTimeFormat('en-US',{timeZone,weekday:'short',hour:'numeric',hourCycle:'h23'}).formatToParts(date);
-const wd=parts.find(p=>p.type==='weekday')?.value;
-const hour=parseInt(parts.find(p=>p.type==='hour')?.value||'0',10)%24;
-if(wd==='Sat'||wd==='Sun')return{label:'Weekend',icon:ICONS.coffee,cls:'b-w'};
-if(hour>=9&&hour<18)return{label:'Work Hours',icon:ICONS.briefcase,cls:'b-o'};
-return{label:'Off Hours',icon:ICONS.moon,cls:'b-f'}}
-function searchResults(){const q=state.search.trim().toLowerCase();if(!q)return[];const out=[];
-COUNTRY_DATA.forEach(i=>{const cm=i.country.toLowerCase().includes(q);i.zones.forEach(z=>{if(cm||z.toLowerCase().includes(q))out.push({country:i.country,zone:z})})});return out}
+const formatTime=(date,timeZone)=>new Intl.DateTimeFormat('en-US',{timeZone,hour:'2-digit',minute:'2-digit',...(state.h24?{hourCycle:'h23'}:{hour12:true}),weekday:'short',month:'short',day:'numeric'}).format(date);
+function workOf(zone){const c=state.clocks.find(x=>x.zone===zone);return(c&&c.work)||state.work}
+function getWorkStatus(date,timeZone){const o=zparts(+date,timeZone);const dow=new Date(Date.UTC(+o.year,+o.month-1,+o.day)).getUTCDay();
+const min=(+o.hour%24)*60+(+o.minute);const w=workOf(timeZone);
+if(!w.d.includes(dow))return{label:'Day off',icon:ICONS.coffee,cls:'b-w',code:'off'};
+if(min>=w.s*60&&min<w.e*60)return{label:'Work Hours',icon:ICONS.briefcase,cls:'b-o',code:'work'};
+return{label:'Off Hours',icon:ICONS.moon,cls:'b-f',code:'after'}}
+let extraCache=null;
+function extraZones(){if(extraCache)return extraCache;try{const known=new Set();COUNTRY_DATA.forEach(i=>i.zones.forEach(z=>known.add(z)));
+extraCache=Intl.supportedValuesOf('timeZone').filter(z=>!known.has(z)&&z.includes('/')&&!/^(Etc|SystemV|US|Canada|Brazil|Chile|Mexico)\//.test(z)).map(z=>({country:z.split('/').pop().replace(/_/g,' '),zone:z}))}catch{extraCache=[]}return extraCache}
+function searchResults(){const q=state.search.trim().toLowerCase().replace(/_/g,' ');if(!q)return[];const out=[];
+COUNTRY_DATA.forEach(i=>{const cm=i.country.toLowerCase().includes(q);i.zones.forEach(z=>{if(cm||z.toLowerCase().replace(/_/g,' ').includes(q))out.push({country:i.country,zone:z})})});
+extraZones().forEach(x=>{if(x.zone.toLowerCase().replace(/_/g,' ').includes(q))out.push(x)});return out.slice(0,40)}
 const persistDate=()=>{if(!state.isLive)store.set('tzc_date',state.selectedDate.toISOString())};
 function setWeekday(t){state.isLive=false;store.set('tzc_is_live',false);const d=new Date(state.selectedDate);d.setDate(d.getDate()+(((t+6)%7)-((d.getDay()+6)%7)));state.selectedDate=d;persistDate();render()}
 function setHour(h){const wasLive=state.isLive;state.isLive=false;store.set('tzc_is_live',false);const d=new Date(state.selectedDate);d.setHours(h);state.selectedDate=d;persistDate();if(wasLive)render();else updateTimes()}
 function setLive(on){state.isLive=on;store.set('tzc_is_live',on);if(on)state.selectedDate=new Date();else persistDate();render()}
 function addClock(c,z){if(!state.clocks.some(x=>x.zone===z)){state.clocks=[...state.clocks,{country:c,zone:z}];store.set('tzc_clocks',state.clocks)}state.search='';render()}
 function removeClock(z){state.clocks=state.clocks.filter(c=>c.zone!==z);store.set('tzc_clocks',state.clocks);render()}
-function resetAll(){state.clocks=DEFAULT_CLOCKS;state.selectedDate=hourStart();state.isLive=false;state.search='';['tzc_clocks','tzc_date','tzc_is_live','tzc_widget_zones'].forEach(store.del);state.wz=null;render()}
+function resetAll(){state.clocks=DEFAULT_CLOCKS;state.selectedDate=hourStart();state.isLive=false;state.search='';['tzc_clocks','tzc_date','tzc_is_live','tzc_widget_zones','tzc_work','tzc_h24'].forEach(store.del);state.wz=null;state.work=DEFAULT_WORK;state.h24=false;render()}
 const app=document.getElementById('app');
-function cardsHTML(){const d=state.selectedDate;const wzs=state.notif&&state.notif.native?widgetZones():[];return state.clocks.map(({country,zone})=>{const st=getWorkStatus(d,zone),home=zone===HOME_ZONE;
-return`<div class="card ${home?'home':''}"><div><div class="flex ac gap2 wrap"><span class="cn">${esc(country)}</span><span class="cz mono">(${esc(zone)})</span></div><div class="ct mono">${formatTime(d,zone)}</div></div>
-<div class="crow"><span class="badge ${st.cls}">${st.icon}${st.label}</span><span class="acts">${state.notif&&state.notif.native?`<button data-wz="${esc(zone)}" class="rm ${wzs.includes(zone)?'wzon':''}" aria-pressed="${wzs.includes(zone)}">${ICONS.pin}<span>${wzs.includes(zone)?'On widget':'Widget'}</span></button>`:''}${home?'':`<button data-remove="${esc(zone)}" class="rm">${ICONS.trash}<span>Remove</span></button>`}</span></div></div>`}).join('')}
-function bindCards(){app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClock(b.dataset.remove));app.querySelectorAll('[data-wz]').forEach(b=>b.onclick=()=>toggleWidgetZone(b.dataset.wz))}
+function cardsHTML(){const d=state.selectedDate,ms=+d;const nat=state.notif&&state.notif.native;const wzs=nat?widgetZones():[];
+return state.clocks.map(({country,zone})=>{const st=getWorkStatus(d,zone),home=zone===HOME_ZONE,off=offsetText(zone,ms);
+return`<div class="card ${home?'home':''}"><div><div class="flex ac gap2 wrap"><span class="cn">${esc(country)}</span><span class="cz mono">(${esc(zone)})</span></div><div class="ct mono">${formatTime(d,zone)}</div>${off?`<div class="cz mono">${off}</div>`:''}${dstLine(zone)}</div>
+<div class="crow"><button data-hours="${esc(zone)}" class="badge ${st.cls}" aria-label="Edit work hours for ${esc(country)}">${st.icon}${st.label}</button><span class="acts">${nat?`<button data-wz="${esc(zone)}" class="rm ${wzs.includes(zone)?'wzon':''}" aria-pressed="${wzs.includes(zone)}">${ICONS.pin}<span>${wzs.includes(zone)?'On widget':'Widget'}</span></button>`:''}${home?'':`<button data-remove="${esc(zone)}" class="rm">${ICONS.trash}<span>Remove</span></button>`}</span></div></div>`}).join('')}
+function bindCards(){app.querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>removeClock(b.dataset.remove));app.querySelectorAll('[data-wz]').forEach(b=>b.onclick=()=>toggleWidgetZone(b.dataset.wz));app.querySelectorAll('[data-hours]').forEach(b=>b.onclick=()=>openHours(b.dataset.hours))}
 function updateTimes(){const d=state.selectedDate;const p=app.querySelector('.pill b');if(p)p.textContent=formatTime(d,HOME_ZONE);
 const hv=app.querySelector('.hv');if(hv)hv.textContent=String(d.getHours()).padStart(2,'0')+':00';
 const c=app.querySelector('.cards');if(c){c.innerHTML=cardsHTML();bindCards()}}
@@ -192,6 +243,7 @@ app.innerHTML=`
 <div><h1>${ICONS.globe}<span>Time Zone Comparator</span></h1><p class="sub">Align client meetings across regional time shifts</p></div>
 <div class="hrow">
 <button id="reset" class="reset">${ICONS.reset}<span>Reset Data</span></button>
+<button id="fmt" class="reset" aria-label="Switch between 12 and 24 hour time"><span>${state.h24?'24h':'12h'}</span></button>
 <div class="pill">${ICONS.clock}<span>PHT:</span><b class="mono">${formatTime(d,HOME_ZONE)}</b></div>
 </div></header>
 <section class="panel">
@@ -209,6 +261,7 @@ app.innerHTML=`
 ${state.search?`<button id="clear" class="clr" aria-label="Clear search">${ICONS.x}</button>`:''}</div>
 ${results.length?`<div class="res">${results.map(r=>`<button data-add="${esc(r.zone)}" data-country="${esc(r.country)}"><b>${esc(r.country)}</b><span class="mono">${esc(r.zone)}</span></button>`).join('')}</div>`:(state.search.trim()?`<div class="res none">No matches. Try a country like "Japan" or a zone like "Europe".</div>`:'')}
 </div>
+<button id="mfOpen" class="mfbtn">${ICONS.calendar}<span>Find a meeting time</span></button>
 <div class="cards">${cardsHTML()}</div>
 ${widgetSectionHTML()}
 ${calendarSectionHTML()}
@@ -312,10 +365,10 @@ try{await cb.insertEvent({title:a.label||'Meeting',begin:nx.ev,end:nx.ev+3600000
 /* --- home-screen widget (Android only) --- */
 state.wz=store.get('tzc_widget_zones',null);
 function widgetZones(){const have=state.clocks.map(c=>c.zone);let z=Array.isArray(state.wz)?state.wz.filter(x=>have.includes(x)):[];if(!z.length)z=have.slice(0,4);return z.slice(0,4)}
-const widgetClocks=()=>widgetZones().map(z=>({label:cityOf(z),zone:z}));
+const widgetClocks=()=>widgetZones().map(z=>{const w=workOf(z);return{label:cityOf(z),zone:z,ws:w.s,we:w.e,wd:w.d.join('')}});
 let lastWidgetJson='',widgetFails=0;
-function syncWidget(){const cw=CW();if(!cw||widgetFails>=3)return;const j=JSON.stringify(widgetClocks());if(j===lastWidgetJson)return;lastWidgetJson=j;
-try{const p=cw.setClocks({clocks:widgetClocks()});if(p&&p.then)p.then(()=>{widgetFails=0},()=>{widgetFails++;lastWidgetJson=''})}catch{widgetFails++;lastWidgetJson=''}}
+function syncWidget(){const cw=CW();if(!cw||widgetFails>=3)return;const j=JSON.stringify([widgetClocks(),state.h24]);if(j===lastWidgetJson)return;lastWidgetJson=j;
+try{const p=cw.setClocks({clocks:widgetClocks(),h24:state.h24});if(p&&p.then)p.then(()=>{widgetFails=0},()=>{widgetFails++;lastWidgetJson=''})}catch{widgetFails++;lastWidgetJson=''}}
 function toggleWidgetZone(zone){const cur=widgetZones();let next;
 if(cur.includes(zone)){if(cur.length<=1){alert('Keep at least one clock on the widget.');return}next=cur.filter(z=>z!==zone)}
 else{if(cur.length>=4){alert('The widget shows up to 4 clocks. Remove one first.');return}next=[...cur,zone]}
@@ -326,15 +379,122 @@ try{const r=await cw.pin();if(!r||!r.requested)alert(HOWTO)}catch{alert(HOWTO)}}
 function widgetSectionHTML(){if(!state.notif.native)return'';
 return`<section class="alarms"><div class="lbl"><span class="l">${ICONS.pin}Home screen widget</span><button id="pinWidget" class="mini pri">${ICONS.plus}<span>Add widget</span></button></div>
 <p class="hint">Live clocks for up to 4 time zones (${widgetZones().length} selected). Tap <b>Widget</b> on a clock above to choose which ones appear. If nothing happens: ${HOWTO.charAt(0).toLowerCase()+HOWTO.slice(1)}</p></section>`}
+/* ===== meeting finder, work hours, daylight saving, share ===== */
+const p2=n=>String(n).padStart(2,'0');
+const deviceZone=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}catch{return'UTC'}};
+const sheetAll=sel=>Array.from(document.getElementById('sheet').querySelectorAll(sel));
+const dowIn=(ms,zone)=>{const o=zparts(ms,zone);return new Date(Date.UTC(+o.year,+o.month-1,+o.day)).getUTCDay()};
+const fmtClock=(ms,zone,withDay)=>new Intl.DateTimeFormat('en-US',{timeZone:zone,hour:'numeric',minute:'2-digit',...(state.h24?{hourCycle:'h23'}:{hour12:true}),...(withDay?{weekday:'short'}:{})}).format(new Date(ms));
+const fmtDay=(ms,zone)=>new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short',month:'short',day:'numeric'}).format(new Date(ms));
+function fmtRange(start,end,zone){const sameDay=zoneYMD(start,zone).d===zoneYMD(end-1,zone).d;return`${fmtClock(start,zone,true)} – ${fmtClock(end,zone,!sameDay)}`}
+const hourLabel=h=>state.h24?`${p2(h%24)}:00`:`${h%12||12} ${h%24<12?'AM':'PM'}`;
+const tickLabel=h=>state.h24?p2(h%24):`${h%12||12}${h%24<12?'a':'p'}`;
+const workText=z=>{const w=workOf(z);const names=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const order=[1,2,3,4,5,6,0].filter(x=>w.d.includes(x));
+let days=order.length===5&&!w.d.includes(0)&&!w.d.includes(6)?'Mon–Fri':order.length===7?'Every day':order.map(x=>names[x]).join(' ');return`${hourLabel(w.s)}–${hourLabel(w.e)} · ${days}`};
+
+/* --- offset from the home clock, and daylight-saving warnings --- */
+function offsetText(zone,ms){if(zone===HOME_ZONE)return'';const m=(tzOffset(ms,zone)-tzOffset(ms,HOME_ZONE))/60000;if(m===0)return'Same time as PHT';
+const h=Math.abs(m)/60;const t=Number.isInteger(h)?String(h):h.toFixed(2).replace(/0+$/,'').replace(/\.$/,'');return`${m>0?'+':'−'}${t}h vs PHT`}
+const dstCache={};
+function dstInfo(zone,base,span){base=base||Date.now();span=span||21;const key=zone+'|'+Math.floor(base/864e5)+'|'+span;if(key in dstCache)return dstCache[key];
+let prev=tzOffset(base,zone),res=null;for(let i=1;i<=span;i++){const o=tzOffset(base+i*864e5,zone);if(o!==prev){res={days:i,delta:(o-prev)/60000,at:base+i*864e5};break}prev=o}dstCache[key]=res;return res}
+function dstLine(zone){const i=dstInfo(zone,Date.now(),14);if(!i)return'';const h=i.delta/60;return`<div class="dst">⚠ Clock changes around ${fmtDay(i.at,zone)} (${h>0?'+':'−'}${Math.abs(h)}h)</div>`}
+
+/* --- work hours --- */
+function applyHours(zone,w,all){
+if(all&&w){state.work=w;store.set('tzc_work',w);state.clocks=state.clocks.map(c=>{const n={...c};delete n.work;return n})}
+else{state.clocks=state.clocks.map(c=>{if(c.zone!==zone)return c;const n={...c};if(w)n.work=w;else delete n.work;return n})}
+store.set('tzc_clocks',state.clocks);lastWidgetJson='';render()}
+function openHours(zone){const c=state.clocks.find(x=>x.zone===zone);if(!c)return;const w=workOf(zone),custom=!!c.work;
+const opts=(a,b,sel)=>{let o='';for(let h=a;h<=b;h++)o+=`<option value="${h}" ${h===sel?'selected':''}>${hourLabel(h)}</option>`;return o};
+sheet(`<div class="ov" id="ov"><div class="sheet" role="dialog" aria-label="Work hours"><h2>Work hours · ${esc(cityOf(zone))}</h2>
+<p class="hint">Used for the Work Hours badge, the widget and the meeting finder. ${custom?'This clock has its own hours.':'This clock uses the default hours.'}</p>
+<div class="two"><label class="fld"><span>Start</span><select id="wh-s">${opts(0,23,w.s)}</select></label><label class="fld"><span>End</span><select id="wh-e">${opts(1,24,w.e)}</select></label></div>
+<div class="fld"><span>Work days</span><div class="days">${WEEKDAYS.map(x=>`<button type="button" data-whd="${x.value}" class="day ${w.d.includes(x.value)?'sel':''}">${x.label}</button>`).join('')}</div></div>
+<label class="chk"><input id="wh-all" type="checkbox"><span>Use these hours for all clocks</span></label>
+<div class="err" id="wh-err" role="alert"></div>
+<div class="btns"><button id="wh-reset" type="button">${custom?'Use default':'Cancel'}</button><button id="wh-save" type="button" class="go">Save</button></div></div></div>`);
+const g=i=>document.getElementById(i);const days=new Set(w.d);
+sheetAll('[data-whd]').forEach(b=>b.onclick=()=>{const v=+b.dataset.whd;if(days.has(v))days.delete(v);else days.add(v);b.classList.toggle('sel',days.has(v))});
+g('ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};
+g('wh-reset').onclick=()=>{if(custom)applyHours(zone,null,false);closeSheet()};
+g('wh-save').onclick=()=>{const s=+g('wh-s').value,e=+g('wh-e').value,err=g('wh-err');
+if(!(e>s)){err.textContent='End must be after start.';return}if(!days.size){err.textContent='Pick at least one work day.';return}
+applyHours(zone,{s,e,d:[...days].sort()},g('wh-all').checked);closeSheet()}}
+
+/* --- meeting finder --- */
+let mf={date:'',zones:[],last:null};
+function meetingHours(zones,dateStr,refZone){const[y,m,d]=dateStr.split('-').map(Number);const base=zonedToUtc(y,m,d,0,0,refZone);const out=[];
+for(let k=0;k<72;k++){const start=base+k*1800000; /* 30-minute steps, 36 hours, so a window can run past midnight */
+const cells=zones.map(z=>{const o=zparts(start,z);const lh=+o.hour%24,lm=+o.minute;const w=workOf(z);const smin=lh*60+lm,emin=smin+30;
+return{working:w.d.includes(dowIn(start,z))&&smin>=w.s*60&&emin<=w.e*60,sleeping:lh>=22||lh<7,lh,lm}});
+out.push({start,cells,all:cells.every(c=>c.working),none:cells.every(c=>!c.sleeping),count:cells.filter(c=>c.working).length})}
+return out}
+function findWindows(hours){
+const runsOf=pred=>{const r=[];let st=-1;hours.forEach((h,i)=>{if(pred(h)){if(st<0)st=i}else if(st>=0){r.push([st,i]);st=-1}});if(st>=0)r.push([st,hours.length]);
+const day=r.filter(x=>x[0]<48);const long=day.filter(x=>x[1]-x[0]>=2);return long.length?long:day};
+let kind='all',runs=runsOf(h=>h.all);
+if(!runs.length){const best=Math.max(0,...hours.slice(0,48).filter(h=>h.none).map(h=>h.count));if(best>0){kind='compromise';runs=runsOf(h=>h.none&&h.count===best)}else kind='none'}
+const list=runs.map(([a,b])=>({a,b,start:hours[a].start,end:hours[a].start+(b-a)*1800000,len:(b-a)/2})).sort((x,y)=>y.len-x.len||x.a-y.a).slice(0,3);
+return{kind,runs:list}}
+function openCalendarEvent(title,begin,end,zone,details){const cb=CAL();
+if(cb){Promise.resolve().then(()=>cb.insertEvent({title,begin,end,timezone:zone})).catch(()=>alert('Could not open a calendar app on this phone.'));return}
+const f=ms=>{const o=zparts(ms,zone);return`${o.year}${p2(o.month)}${p2(o.day)}T${p2(+o.hour%24)}${p2(o.minute)}00`};
+const url='https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(title)+'&dates='+f(begin)+'/'+f(end)+'&ctz='+encodeURIComponent(zone)+(details?'&details='+encodeURIComponent(details):'');
+window.open(url,'_blank','noopener')}
+async function shareText(text){try{if(navigator.share){await navigator.share({text});return}}catch(e){if(e&&e.name==='AbortError')return}
+try{await navigator.clipboard.writeText(text);alert('Copied to clipboard.');return}catch{}
+prompt('Copy this text:',text)}
+function mfRun(i){const L=mf.last;return L&&L.w.runs[i]?L:null}
+function mfAlarm(i){const L=mfRun(i);if(!L)return;const r=L.w.runs[i],o=zparts(r.start,L.dz);
+openAlarmForm(null,{label:'Meeting',zone:L.dz,time:`${p2(+o.hour%24)}:${p2(o.minute)}`,repeat:'once',date:`${o.year}-${p2(o.month)}-${p2(o.day)}`,lead:15,sound:defSound})}
+function mfCalendar(i){const L=mfRun(i);if(!L)return;const r=L.w.runs[i];
+openCalendarEvent('Meeting',r.start,r.start+3600000,L.dz,L.zones.map(z=>`${cityOf(z)}: ${fmtRange(r.start,r.start+3600000,z)}`).join('\n'))}
+function mfShare(i){const L=mfRun(i);if(!L)return;const r=L.w.runs[i];
+shareText((L.w.kind==='all'?'Everyone can meet between:':'Best compromise window:')+'\n'+L.zones.map(z=>`• ${cityOf(z)}: ${fmtRange(r.start,r.end,z)}`).join('\n'))}
+function renderMF(){const body=document.getElementById('mf-body');if(!body)return;
+const dz=deviceZone(),zones=mf.zones;const hours=meetingHours(zones,mf.date,dz),w=findWindows(hours);mf.last={hours,w,zones,dz};
+const bar=cls=>`<div class="bar" aria-hidden="true">${cls.map(x=>`<i class="${x}"></i>`).join('')}</div>`;
+const rows=zones.map((z,zi)=>`<div class="mfrow"><div class="mfl"><b>${esc(cityOf(z))}</b><span>${esc(workText(z))}</span></div>${bar(hours.slice(0,48).map(h=>{const c=h.cells[zi];return c.working?'cw':c.sleeping?'cs':'ca'}))}</div>`).join('');
+const every=`<div class="mfrow"><div class="mfl"><b>Everyone</b><span>green = all at work</span></div>${bar(hours.slice(0,48).map(h=>h.all?'cw':h.none?'ca':'cs'))}</div>`;
+const ticks=`<div class="ticks mono">${[0,6,12,18,24].map(h=>`<span>${tickLabel(h)}</span>`).join('')}</div>`;
+const legend='<div class="legend"><span><i class="cw"></i>At work</span><span><i class="ca"></i>Awake</span><span><i class="cs"></i>Night</span></div>';
+const base=zonedToUtc(...mf.date.split('-').map(Number).slice(0,3),12,0,dz);
+const notes=zones.map(z=>{const i=dstInfo(z,base,21);return i?`${cityOf(z)} changes clocks around ${fmtDay(i.at,z)} (${i.delta>0?'+':'−'}${Math.abs(i.delta/60)}h)`:''}).filter(Boolean);
+const kindTxt={all:'Everyone is at work',compromise:'Best compromise: nobody is asleep',none:''}[w.kind];
+const list=w.runs.length?w.runs.map((r,i)=>`<div class="al mfw"><div class="ainfo"><div class="an" style="margin:0 0 4px">${kindTxt}${r.len>1?' · '+r.len+' h window':''}</div>${zones.map(z=>`<div class="as"><b>${esc(cityOf(z))}</b> ${fmtRange(r.start,r.end,z)}</div>`).join('')}</div>
+<div class="acts2"><button class="mini pri" data-mfa="${i}">${ICONS.bell}<span>Alarm</span></button><button class="mini" data-mfc="${i}">${ICONS.calendar}<span>Calendar</span></button><button class="mini" data-mfs="${i}"><span>Share</span></button></div></div>`).join(''):'<p class="hint">No time works without someone being up at night. Try fewer people or another date.</p>';
+body.innerHTML=`${notes.length?`<div class="note warn"><span>Heads-up: ${esc(notes.join('; '))}. Meeting times may shift after that.</span></div>`:''}
+<div class="mfgrid">${every}${rows}${ticks}${legend}</div><div class="alist">${list}</div>`;
+sheetAll('[data-mfa]').forEach(b=>b.onclick=()=>mfAlarm(+b.dataset.mfa));
+sheetAll('[data-mfc]').forEach(b=>b.onclick=()=>mfCalendar(+b.dataset.mfc));
+sheetAll('[data-mfs]').forEach(b=>b.onclick=()=>mfShare(+b.dataset.mfs))}
+function renderChips(){const el=document.getElementById('mf-chips');if(!el)return;
+el.innerHTML=state.clocks.map(c=>`<button type="button" class="chip ${mf.zones.includes(c.zone)?'sel':''}" data-mfz="${esc(c.zone)}" aria-pressed="${mf.zones.includes(c.zone)}">${esc(cityOf(c.zone))}</button>`).join('');
+sheetAll('[data-mfz]').forEach(b=>b.onclick=()=>{const z=b.dataset.mfz;
+if(mf.zones.includes(z)){if(mf.zones.length<=1)return;mf.zones=mf.zones.filter(x=>x!==z)}else{if(mf.zones.length>=5){alert('Pick up to 5 people.');return}mf.zones=[...mf.zones,z]}
+renderChips();renderMF()})}
+function openMeetingFinder(){const dz=deviceZone(),today=ymdStr(zoneYMD(Date.now(),dz));
+if(!mf.date||mf.date<today)mf.date=today;
+mf.zones=mf.zones.filter(z=>state.clocks.some(c=>c.zone===z));if(mf.zones.length<2)mf.zones=state.clocks.slice(0,4).map(c=>c.zone);
+sheet(`<div class="ov" id="ov"><div class="sheet" role="dialog" aria-label="Find a meeting time"><h2>Find a meeting time</h2>
+<label class="fld"><span>Date (your time zone)</span><input id="mf-date" type="date" value="${mf.date}" min="${today}"></label>
+<div class="fld"><span>Who is joining</span><div class="chips" id="mf-chips"></div></div>
+<div id="mf-body"></div><div class="btns"><button id="mf-close" type="button">Close</button></div></div></div>`);
+const g=i=>document.getElementById(i);
+g('ov').onclick=e=>{if(e.target.id==='ov')closeSheet()};g('mf-close').onclick=closeSheet;
+g('mf-date').onchange=e=>{if(e.target.value){mf.date=e.target.value;renderMF()}};
+renderChips();renderMF()}
+
 const ymdStr=({y,m,d})=>`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 const cityOf=z=>z.split('/').pop().replace(/_/g,' ');
-function zoneLabel(z){const it=COUNTRY_DATA.find(i=>i.zones.includes(z));return it?`${it.country} – ${cityOf(z)}`:z}
-function allZones(){const s=[];COUNTRY_DATA.forEach(i=>i.zones.forEach(z=>s.push(z)));return s}
-function fmt12(t){const[h,m]=t.split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
+function zoneLabel(z){const it=COUNTRY_DATA.find(i=>i.zones.includes(z));return it?`${it.country} – ${cityOf(z)}`:`${cityOf(z)} (${z.split('/')[0]})`}
+function allZones(){const s=[];COUNTRY_DATA.forEach(i=>i.zones.forEach(z=>s.push(z)));extraZones().forEach(x=>s.push(x.zone));return s}
+function fmt12(t){if(state.h24)return t;const[h,m]=t.split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h<12?'AM':'PM'}`}
 const repeatText=a=>a.repeat==='daily'?'Every day':a.repeat==='weekdays'?'Mon–Fri':`Once · ${a.date}`;
 const leadText=l=>l?`${l} min before`:'At start time';
-function alarmBody(a,o){const zt=new Intl.DateTimeFormat('en-US',{timeZone:a.zone,hour:'numeric',minute:'2-digit'}).format(new Date(o.ev));
-const lt=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit'}).format(new Date(o.ev));
+function alarmBody(a,o){const zt=new Intl.DateTimeFormat('en-US',{timeZone:a.zone,hour:'numeric',minute:'2-digit',...(state.h24?{hourCycle:'h23'}:{})}).format(new Date(o.ev));
+const lt=new Intl.DateTimeFormat('en-US',{hour:'numeric',minute:'2-digit',...(state.h24?{hourCycle:'h23'}:{})}).format(new Date(o.ev));
 return`${a.lead?`Starts in ${a.lead} min`:'Starting now'}: ${zt} in ${cityOf(a.zone)} (${lt} your time)`}
 
 /* --- native scheduling --- */
@@ -410,6 +570,8 @@ function updateAlarmList(){const l=app.querySelector('.alist');if(l){l.innerHTML
 function bindAlarms(){const $=s=>app.querySelector(s);
 const a=$('#addAlarm');if(a)a.onclick=()=>openAlarmForm();
 const pw=$('#pinWidget');if(pw)pw.onclick=pinWidget;
+const mfo=$('#mfOpen');if(mfo)mfo.onclick=()=>openMeetingFinder();
+const fm=$('#fmt');if(fm)fm.onclick=()=>{state.h24=!state.h24;store.set('tzc_h24',state.h24);lastWidgetJson='';render()};
 const cl=$('#calLoad');if(cl)cl.onclick=loadCalendar;
 const cs=$('#calSettings');if(cs)cs.onclick=()=>{const as=AS();if(as)as.openAppSettings().catch(()=>{})};
 app.querySelectorAll('[data-evalarm]').forEach(b=>b.onclick=()=>evAlarm(+b.dataset.evalarm));

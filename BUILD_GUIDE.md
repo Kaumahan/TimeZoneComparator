@@ -104,11 +104,33 @@ in GitHub go to Settings → Secrets and variables → Actions → **Variables**
 * **Play Console:** in the Data safety form, calendar data is read on the device only and is not collected or shared.
   Keep the privacy policy's calendar section.
 
+### Meeting finder, work hours, daylight saving (all in `www/index.html`, no native code)
+
+* **Find a meeting time:** pick a date and up to 5 clocks. A bar per person shows who is at work (green), awake (amber) or
+  asleep (dark) in 30-minute steps, and the best windows are listed in every person's own time. A window may run past your
+  midnight. Each window has **Alarm**, **Calendar** and **Share** buttons. If nobody can meet without someone being up at
+  night it lists the best compromise.
+* **Work hours:** tap the badge on any clock to set its own hours and work days (for example Sunday to Thursday), or use
+  the same hours for every clock. The badge, the widget and the meeting finder all follow them.
+* **Daylight saving:** a clock shows a warning when its offset changes within 14 days, and the meeting finder warns when a
+  chosen date is near a change. Each clock also shows its offset from the Manila clock (for example "−12h vs PHT").
+* **Every city:** search accepts any time zone name (about 400), and the alarm form lists them all.
+* **12h / 24h:** the toggle in the header also changes the widget and alarm texts.
+* **Share:** uses the phone's share sheet when available, otherwise copies the text.
+
+### Alarm buttons
+
+When an alarm rings, the notification has **Snooze 5 min** and **Dismiss** buttons. Dismissing stops the sound at once.
+A snoozed alarm rings again after 5 minutes (it is not restored after a restart).
+
 ### Home screen widget
 
-* Shows up to 4 live clocks (city, day, time). In the app tap **Add widget**, or press and hold an empty spot on the
-  home screen → Widgets → **Time Zone Clocks**. It can be resized, and tapping it opens the app.
-* Choose which clocks appear with the **Widget** button on each clock. The times tick by themselves.
+* **Look:** the first clock is shown large (time, AM/PM, date, city), the others in compact rows below. Each clock has a
+  sun or moon icon and a coloured dot: green = working, red = off hours, grey = day off (using your work hours).
+* **Sizes:** resize it freely. Short widgets switch to a compact two-clock layout, taller ones show up to 4 clocks.
+* In the app tap **Add widget**, or press and hold an empty spot on the home screen → Widgets → **Time Zone Clocks**.
+  Choose which clocks appear with the **Widget** button on each clock. Tapping the widget opens the app.
+* The times tick by themselves. The dots and icons refresh every 15 minutes and whenever you change something.
 
 ## Google Play Console checklist
 
