@@ -84,6 +84,29 @@ ALARM_RECEIVERS = """        <receiver
 """
 
 
+
+WIDGET_ALLOWED = {
+    "AnalogClock", "Button", "Chronometer", "ImageButton", "ImageView", "ProgressBar", "TextClock", "TextView",
+    "ViewFlipper", "FrameLayout", "GridLayout", "LinearLayout", "RelativeLayout", "AdapterViewFlipper", "GridView",
+    "ListView", "StackView", "ViewStub",
+}
+
+
+def check_widget_layouts():
+    """Widgets may only use a small set of view classes. Anything else shows 'Problem loading widget'."""
+    import xml.etree.ElementTree as ET
+
+    bad = False
+    for path in glob.glob("android/app/src/main/res/layout/widget_*.xml"):
+        for el in ET.parse(path).getroot().iter():
+            if el.tag not in WIDGET_ALLOWED:
+                print("ERROR: %s uses <%s>, which Android does not allow in widgets" % (path, el.tag))
+                bad = True
+    if bad:
+        sys.exit(1)
+    print("widget layouts use only allowed views")
+
+
 def native():
     use_widget = not off("DISABLE_WIDGET")
     use_alarm = not off("DISABLE_ALARM")
@@ -133,6 +156,7 @@ def native():
     )
     print("MainActivity registers:", ", ".join(p.split(".")[-1] for p in plugins) or "(none)")
 
+    check_widget_layouts()
 
 if __name__ == "__main__":
     {"perms": perms, "native": native}[sys.argv[1]]()
