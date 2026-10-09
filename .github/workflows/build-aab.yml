@@ -2,6 +2,11 @@ name: Build Android AAB
 
 on:
   workflow_dispatch:
+    inputs:
+      create_new_key:
+        description: "ONLY tick this for your very first build. It creates a new signing key. Never tick it for updates."
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -10,8 +15,32 @@ jobs:
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
       KEY_ALIAS_SECRET: ${{ secrets.KEY_ALIAS }}
+      EXPECTED_SHA1: ${{ vars.EXPECTED_SHA1 }}
+      CREATE_NEW_KEY: ${{ github.event.inputs.create_new_key }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Make sure a signing key is available (fail early)
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS_SECRET" ]; then
+            if [ "$CREATE_NEW_KEY" != "true" ]; then
+              {
+                echo "### Build stopped: no signing key is saved in this repository"
+                echo ""
+                echo "Google Play only accepts updates signed with the SAME key as your first upload, so this build refuses to invent a new one."
+                echo ""
+                echo "**Fix:** add these three repository secrets (Settings > Secrets and variables > Actions > Secrets) from your saved key:"
+                echo "- \`KEYSTORE_BASE64\` (the key file as text)"
+                echo "- \`KEYSTORE_PASSWORD\`"
+                echo "- \`KEY_ALIAS\` (normally \`upload\`)"
+                echo ""
+                echo "**First build ever?** Run the workflow again and tick **create_new_key**."
+              } | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "::error::No signing key saved. See the build summary for how to fix this."
+              exit 1
+            fi
+            echo "Creating a NEW key because create_new_key was ticked."
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -62,19 +91,40 @@ jobs:
       - name: Prepare signing key
         run: |
           mkdir -p out
-          if [ -n "$KEYSTORE_BASE64" ]; then
+          HAVE_KEY=false
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS_SECRET" ]; then HAVE_KEY=true; fi
+          if [ "$HAVE_KEY" = "true" ]; then
+            if [ "$CREATE_NEW_KEY" = "true" ]; then
+              echo "::error::A signing key is already saved in this repository. Run again WITHOUT ticking create_new_key."
+              exit 1
+            fi
             echo "Using the signing key stored in repository secrets."
-            echo "$KEYSTORE_BASE64" | base64 -d > release.jks
+            echo "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > release.jks
+            SHA1=$(keytool -list -v -keystore release.jks -storepass "$KEYSTORE_PASSWORD" 2>/dev/null | grep -m1 "SHA1:" | sed 's/.*SHA1: *//')
+            if [ -z "$SHA1" ]; then
+              echo "::error::Could not read the saved signing key. Check that KEYSTORE_BASE64 and KEYSTORE_PASSWORD belong together."
+              exit 1
+            fi
+            if [ -n "$EXPECTED_SHA1" ]; then
+              A=$(echo "$SHA1" | tr -d ': ' | tr 'a-f' 'A-F')
+              B=$(echo "$EXPECTED_SHA1" | tr -d ': ' | tr 'a-f' 'A-F')
+              if [ "$A" != "$B" ]; then
+                echo "::error::Wrong signing key. The saved key is $SHA1 but Google Play expects $EXPECTED_SHA1."
+                exit 1
+              fi
+              echo "Signing key matches the expected fingerprint."
+            fi
             echo "SIGN_PW=$KEYSTORE_PASSWORD" >> $GITHUB_ENV
             echo "SIGN_ALIAS=$KEY_ALIAS_SECRET" >> $GITHUB_ENV
             echo "NEW_KEY=false" >> $GITHUB_ENV
           else
-            echo "No signing key in secrets, creating a new one."
+            echo "Creating a new signing key (create_new_key was ticked)."
             PW=$(openssl rand -hex 16)
             echo "::add-mask::$PW"
             keytool -genkeypair -keystore release.jks -storetype PKCS12 -alias upload \
               -keyalg RSA -keysize 2048 -validity 10000 -storepass "$PW" -keypass "$PW" \
               -dname "CN=Time Zone Comparator, O=Personal, C=US"
+            NEWSHA1=$(keytool -list -v -keystore release.jks -storepass "$PW" | grep -m1 "SHA1:" | sed 's/.*SHA1: *//')
             cp release.jks out/release.jks
             {
               echo "SAVE THIS FILE AND release.jks SOMEWHERE SAFE. You need them for every app update."
@@ -82,11 +132,13 @@ jobs:
               echo "Key alias:          upload"
               echo "Keystore password:  $PW"
               echo "Key password:       $PW"
+              echo "Fingerprint (SHA1): $NEWSHA1"
               echo
-              echo "To reuse this key in future builds, add these repository secrets:"
+              echo "NEXT STEP, DO IT NOW: add these as repository secrets so later builds reuse this exact key:"
               echo "  KEYSTORE_BASE64   = (the long text below)"
               echo "  KEYSTORE_PASSWORD = $PW"
               echo "  KEY_ALIAS         = upload"
+              echo "Optional safety net: add a repository VARIABLE named EXPECTED_SHA1 with the fingerprint above."
               echo
               echo "KEYSTORE_BASE64 value:"
               base64 -w0 release.jks
